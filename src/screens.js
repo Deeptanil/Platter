@@ -166,7 +166,27 @@ export const AuthScreen = ({ navigation }) => {
     );
 };
 
-const { width: SCREEN_WIDTH } = Dimensions.get('window');
+const isHealthyItem = (item) => {
+    if (item.isHealthy) return true;
+    const name = item.name.toLowerCase();
+    return name.includes('salad') ||
+           name.includes('bowl') ||
+           name.includes('juice') ||
+           name.includes('detox') ||
+           name.includes('fruit') ||
+           name.includes('ragi') ||
+           name.includes('oats') ||
+           name.includes('sprouts') ||
+           name.includes('soup') ||
+           name.includes('sol kadhi') ||
+           name.includes('solkadhi') ||
+           name.includes('avocado') ||
+           name.includes('green') ||
+           name.includes('wheat') ||
+           name.includes('curd') ||
+           name.includes('tea') ||
+           name.includes('solkadhi');
+};
 
 const BANNERS = [
     { id: 'b1', title: 'MEALS UNDER', highlight: '₹250', subtitle: 'Budget-friendly picks near you', gradColors: ['#0F2027', '#203A43', '#2C5364'], accent: '#00E676', icon: 'food-variant' },
@@ -240,14 +260,14 @@ const HomeBannerCarousel = ({ theme }) => {
     );
 };
 
-const SORT_OPTIONS = [
-    { key: 'default', label: 'Best', icon: 'thumb-up' },
-    { key: 'rating', label: 'Top Rated', icon: 'star-circle' },
-    { key: 'delivery', label: 'Fastest Delivery', icon: 'clock-fast' },
-    { key: 'distance', label: 'Nearest First', icon: 'map-marker' },
+const FILTER_ITEMS = [
+    { key: 'best', label: 'Best', type: 'sort', icon: 'thumb-up' },
+    { key: 'rating', label: 'Top Rated', type: 'sort', icon: 'star-circle' },
+    { key: 'delivery', label: 'Fastest Delivery', type: 'sort', icon: 'clock-fast' },
+    { key: 'distance', label: 'Nearest to me', type: 'sort', icon: 'map-marker' },
+    { key: 'gourmet', label: 'Gourmet', type: 'filter', icon: 'silverware-fork-knife' },
+    { key: 'new', label: 'New to you', type: 'filter', icon: 'sparkles' },
 ];
-
-const FILTER_CHIPS = ['Gourmet', 'No packaging charges', 'New to you', 'Fastest delivery'];
 
 const HomeScreenHeader = ({ navigation, theme, isVegOnly, setIsVegOnly, selectedCategory, setSelectedCategory, netInfo, sortOption, setSortOption, activeChip, setActiveChip, filterMode }) => {
     const { user, selectedAddress } = useUser();
@@ -333,56 +353,50 @@ const HomeScreenHeader = ({ navigation, theme, isVegOnly, setIsVegOnly, selected
                 })}
             </ScrollView>
 
-            {/* Pill filter chips */}
-            <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={homeStyles.chipsRow}>
-                <BlurView intensity={theme.dark ? 25 : 40} tint={theme.dark ? 'dark' : 'light'}
-                    style={[homeStyles.filterChip, { borderColor: theme.dark ? 'rgba(255,255,255,0.1)' : 'rgba(108,59,245,0.15)', backgroundColor: theme.dark ? 'rgba(255,255,255,0.05)' : 'rgba(108,59,245,0.06)' }]}>
-                    <MaterialCommunityIcons name="tune-variant" size={13} color={theme.colors.primary} style={{ marginRight: 4 }} />
-                    <RNText style={[homeStyles.chipLabel, { color: theme.colors.primary }]}>Filter</RNText>
-                </BlurView>
-                {FILTER_CHIPS.map(chip => (
-                    <TouchableOpacity
-                        key={chip}
-                        onPress={() => { triggerHaptic(); setActiveChip(prev => prev === chip ? null : chip); }}
-                        activeOpacity={0.8}
-                    >
-                        {activeChip === chip ? (
-                            <LinearGradient
-                                colors={['#8B5CF6', '#6C3BF5']}
-                                start={{ x: 0, y: 0 }}
-                                end={{ x: 1, y: 0 }}
-                                style={homeStyles.filterChip}
-                            >
-                                <RNText style={[homeStyles.chipLabel, { color: '#FFF' }]}>{chip}</RNText>
-                            </LinearGradient>
-                        ) : (
-                            <BlurView intensity={theme.dark ? 25 : 40} tint={theme.dark ? 'dark' : 'light'}
-                                style={[homeStyles.filterChip, { borderColor: theme.dark ? 'rgba(255,255,255,0.1)' : 'rgba(108,59,245,0.15)', backgroundColor: theme.dark ? 'rgba(255,255,255,0.05)' : 'rgba(108,59,245,0.06)' }]}>
-                                <RNText style={[homeStyles.chipLabel, { color: theme.colors.onSurface }]}>{chip}</RNText>
-                            </BlurView>
-                        )}
-                    </TouchableOpacity>
-                ))}
-            </ScrollView>
+            {/* Unified Filter/Sort Single Row */}
+            <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={[homeStyles.chipsRow, { paddingBottom: 10 }]}>
+                {FILTER_ITEMS.map(item => {
+                    let isActive = false;
+                    if (item.type === 'sort') {
+                        isActive = (sortOption === 'default' && item.key === 'best') || (sortOption === item.key);
+                    } else {
+                        isActive = (activeChip === item.label);
+                    }
 
-            {/* Sort options */}
-            <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ paddingHorizontal: 16, paddingBottom: 10, gap: 8 }}>
-                {SORT_OPTIONS.map(opt => (
-                    <TouchableOpacity key={opt.key} onPress={() => { triggerHaptic(); setSortOption(opt.key); }} activeOpacity={0.8}>
-                        {sortOption === opt.key ? (
-                            <LinearGradient colors={['#8B5CF6', '#6C3BF5']} start={{ x: 0, y: 0 }} end={{ x: 1, y: 0 }} style={homeStyles.sortChip}>
-                                <MaterialCommunityIcons name={opt.icon} size={13} color="#FFF" style={{ marginRight: 4 }} />
-                                <RNText style={{ fontSize: 12, color: '#FFF', fontWeight: '600' }}>{opt.label}</RNText>
-                            </LinearGradient>
-                        ) : (
-                            <BlurView intensity={theme.dark ? 25 : 40} tint={theme.dark ? 'dark' : 'light'}
-                                style={[homeStyles.sortChip, { borderColor: theme.dark ? 'rgba(255,255,255,0.1)' : 'rgba(108,59,245,0.15)', backgroundColor: theme.dark ? 'rgba(255,255,255,0.05)' : 'rgba(108,59,245,0.06)' }]}>
-                                <MaterialCommunityIcons name={opt.icon} size={13} color={theme.colors.onSurfaceVariant} style={{ marginRight: 4 }} />
-                                <RNText style={{ fontSize: 12, color: theme.colors.onSurface }}>{opt.label}</RNText>
-                            </BlurView>
-                        )}
-                    </TouchableOpacity>
-                ))}
+                    return (
+                        <TouchableOpacity
+                            key={item.key}
+                            onPress={() => {
+                                triggerHaptic();
+                                if (item.type === 'sort') {
+                                    if (item.key === 'best') setSortOption('default');
+                                    else setSortOption(item.key);
+                                } else {
+                                    setActiveChip(prev => prev === item.label ? null : item.label);
+                                }
+                            }}
+                            activeOpacity={0.8}
+                        >
+                            {isActive ? (
+                                <LinearGradient
+                                    colors={['#8B5CF6', '#6C3BF5']}
+                                    start={{ x: 0, y: 0 }}
+                                    end={{ x: 1, y: 0 }}
+                                    style={homeStyles.filterChip}
+                                >
+                                    <MaterialCommunityIcons name={item.icon} size={13} color="#FFF" style={{ marginRight: 4 }} />
+                                    <RNText style={[homeStyles.chipLabel, { color: '#FFF' }]}>{item.label}</RNText>
+                                </LinearGradient>
+                            ) : (
+                                <BlurView intensity={theme.dark ? 25 : 40} tint={theme.dark ? 'dark' : 'light'}
+                                    style={[homeStyles.filterChip, { borderColor: theme.dark ? 'rgba(255,255,255,0.1)' : 'rgba(108,59,245,0.15)', backgroundColor: theme.dark ? 'rgba(255,255,255,0.05)' : 'rgba(108,59,245,0.06)' }]}>
+                                    <MaterialCommunityIcons name={item.icon} size={13} color={theme.colors.onSurfaceVariant} style={{ marginRight: 4 }} />
+                                    <RNText style={[homeStyles.chipLabel, { color: theme.colors.onSurface }]}>{item.label}</RNText>
+                                </BlurView>
+                            )}
+                        </TouchableOpacity>
+                    );
+                })}
             </ScrollView>
 
             {/* Recommended section */}
@@ -398,6 +412,7 @@ const HomeScreenHeader = ({ navigation, theme, isVegOnly, setIsVegOnly, selected
                         restaurant={item}
                         theme={theme}
                         navigation={navigation}
+                        filterMode={filterMode}
                     />
                 ))}
             </ScrollView>
@@ -416,16 +431,30 @@ export const HomeScreen = ({ navigation, route }) => {
     const [selectedCategory, setSelectedCategory] = useState('All');
     const [sortOption, setSortOption] = useState('default');
     const [activeChip, setActiveChip] = useState(null);
+    const [isRestaurantsLoading, setIsRestaurantsLoading] = useState(false);
     const insets = useSafeAreaInsets();
     const netInfo = useNetInfo();
+    const listRef = useRef(null);
+
+    const triggerFilterLoad = (updateFn) => {
+        setIsRestaurantsLoading(true);
+        const randomTime = Math.floor(Math.random() * 1000) + 500;
+        setTimeout(() => {
+            updateFn();
+            setIsRestaurantsLoading(false);
+            listRef.current?.scrollToOffset({ offset: 370 + insets.top, animated: true });
+        }, randomTime);
+    };
 
     const filteredRestaurants = useMemo(() => {
+        if (isRestaurantsLoading) return [];
+
         let restaurants = ALL_RESTAURANTS;
 
         if (filterMode === 'under250') {
             restaurants = restaurants.filter(res => res.menu.some(item => item.price <= 250));
         } else if (filterMode === 'healthy') {
-            restaurants = restaurants.filter(res => res.moods && res.moods.includes('healthy'));
+            restaurants = restaurants.filter(res => res.menu.some(item => isHealthyItem(item)));
         }
 
         if (isVegOnly) {
@@ -444,7 +473,6 @@ export const HomeScreen = ({ navigation, route }) => {
             } else if (activeChip === 'New to you') {
                 restaurants = restaurants.filter(res => parseFloat(res.distance) <= 2.5);
             } else if (activeChip === 'No packaging charges') {
-                // Mock filtering for packaging charges
                 restaurants = restaurants.filter(res => res.id % 2 === 0);
             }
         }
@@ -457,7 +485,7 @@ export const HomeScreen = ({ navigation, route }) => {
         }
 
         return restaurants;
-    }, [isVegOnly, selectedCategory, sortOption, filterMode, activeChip]);
+    }, [isVegOnly, selectedCategory, sortOption, filterMode, activeChip, isRestaurantsLoading]);
 
     const renderRestaurantCard = useCallback(({ item, index }) => (
         <BigRestaurantCard
@@ -465,12 +493,36 @@ export const HomeScreen = ({ navigation, route }) => {
             theme={theme}
             navigation={navigation}
             index={index}
+            filterMode={filterMode}
         />
-    ), [theme, navigation]);
+    ), [theme, navigation, filterMode]);
+
+    const renderEmpty = () => {
+        if (isRestaurantsLoading) {
+            return (
+                <View style={{ alignItems: 'center', marginTop: 40, paddingHorizontal: 32 }}>
+                    <BlurView intensity={30} tint={theme.dark ? 'dark' : 'light'} style={{ padding: 32, borderRadius: 32, borderWidth: 1.5, borderColor: theme.dark ? 'rgba(255,255,255,0.08)' : 'rgba(108,59,245,0.15)', alignItems: 'center', backgroundColor: theme.dark ? 'rgba(255,255,255,0.04)' : 'rgba(255,255,255,0.5)', width: '100%', gap: 12 }}>
+                        <ActivityIndicator size="large" color={theme.colors.primary} />
+                        <RNText style={{ color: theme.colors.onSurface, fontWeight: '700', fontSize: 14 }}>Curating best options...</RNText>
+                    </BlurView>
+                </View>
+            );
+        }
+        return (
+            <View style={{ alignItems: 'center', marginTop: 80, paddingHorizontal: 32 }}>
+                <BlurView intensity={30} tint={theme.dark ? 'dark' : 'light'} style={{ padding: 24, borderRadius: 32, borderWidth: 1, borderColor: theme.dark ? 'rgba(255,255,255,0.08)' : 'rgba(108,59,245,0.15)', alignItems: 'center', backgroundColor: theme.dark ? 'rgba(255,255,255,0.04)' : 'rgba(255,255,255,0.5)' }}>
+                    <MaterialCommunityIcons name="silverware-fork-knife" size={52} color={theme.colors.primary} />
+                    <RNText style={{ color: theme.colors.onSurface, marginTop: 14, textAlign: 'center', fontWeight: '600', fontSize: 16 }}>No restaurants found</RNText>
+                    <RNText style={{ color: theme.colors.onSurfaceVariant, marginTop: 6, textAlign: 'center', fontSize: 13 }}>Try adjusting your filters</RNText>
+                </BlurView>
+            </View>
+        );
+    };
 
     return (
         <AppBackground>
             <FlatList
+                ref={listRef}
                 data={filteredRestaurants}
                 keyExtractor={(item) => item.id}
                 renderItem={renderRestaurantCard}
@@ -479,29 +531,21 @@ export const HomeScreen = ({ navigation, route }) => {
                         navigation={navigation}
                         theme={theme}
                         isVegOnly={isVegOnly}
-                        setIsVegOnly={setIsVegOnly}
+                        setIsVegOnly={(val) => triggerFilterLoad(() => setIsVegOnly(val))}
                         selectedCategory={selectedCategory}
-                        setSelectedCategory={setSelectedCategory}
+                        setSelectedCategory={(val) => triggerFilterLoad(() => setSelectedCategory(val))}
                         netInfo={netInfo}
                         sortOption={sortOption}
-                        setSortOption={setSortOption}
+                        setSortOption={(val) => triggerFilterLoad(() => setSortOption(val))}
                         activeChip={activeChip}
-                        setActiveChip={setActiveChip}
+                        setActiveChip={(val) => triggerFilterLoad(() => setActiveChip(val))}
                         filterMode={filterMode}
                     />
                 }
-                ListEmptyComponent={
-                    <View style={{ alignItems: 'center', marginTop: 80, paddingHorizontal: 32 }}>
-                        <BlurView intensity={30} tint={theme.dark ? 'dark' : 'light'} style={{ padding: 24, borderRadius: 32, borderWidth: 1, borderColor: theme.dark ? 'rgba(255,255,255,0.08)' : 'rgba(108,59,245,0.15)', alignItems: 'center', backgroundColor: theme.dark ? 'rgba(255,255,255,0.04)' : 'rgba(255,255,255,0.5)' }}>
-                            <MaterialCommunityIcons name="silverware-fork-knife" size={52} color={theme.colors.primary} />
-                            <RNText style={{ color: theme.colors.onSurface, marginTop: 14, textAlign: 'center', fontWeight: '600', fontSize: 16 }}>No restaurants found</RNText>
-                            <RNText style={{ color: theme.colors.onSurfaceVariant, marginTop: 6, textAlign: 'center', fontSize: 13 }}>Try adjusting your filters</RNText>
-                        </BlurView>
-                    </View>
-                }
+                ListEmptyComponent={renderEmpty}
                 contentContainerStyle={{ paddingTop: insets.top, paddingBottom: 160 }}
             />
-            <CartFAB navigation={navigation} />
+            <CartFAB navigation={navigation} bottomOffset={78 + insets.bottom} />
         </AppBackground>
     );
 };
@@ -575,7 +619,7 @@ const MenuItemCard = ({ item, restaurant }) => {
 };
 
 export const RestaurantDetailsScreen = ({ navigation, route }) => {
-    const { restaurant } = route.params;
+    const { restaurant, filterMode } = route.params;
     const { theme } = useAppTheme();
     const { cart } = useCart();
     const { pastOrders } = useCart();
@@ -618,6 +662,12 @@ export const RestaurantDetailsScreen = ({ navigation, route }) => {
             isHighlyOrdered: restaurant.highlyOrdered?.includes(item.id) || false
         }));
 
+        if (filterMode === 'healthy') {
+            menu = menu.filter(item => isHealthyItem(item));
+        } else if (filterMode === 'under250') {
+            menu = menu.filter(item => item.price <= 250);
+        }
+
         if (menuSearchQuery) {
             menu = menu.filter(item => item.name.toLowerCase().includes(menuSearchQuery.toLowerCase()));
         }
@@ -633,7 +683,7 @@ export const RestaurantDetailsScreen = ({ navigation, route }) => {
         }
 
         return menu;
-    }, [menuSearchQuery, activeFilter, restaurant.menu, restaurant.highlyOrdered]);
+    }, [menuSearchQuery, activeFilter, restaurant.menu, restaurant.highlyOrdered, filterMode]);
 
     const DUMMY_OFFERS = [
         `Flat ₹60 OFF above ₹299`,
@@ -796,7 +846,7 @@ export const RestaurantDetailsScreen = ({ navigation, route }) => {
                 )}
                 contentContainerStyle={{ paddingBottom: 160 }}
             />
-            <CartFAB navigation={navigation} />
+            <CartFAB navigation={navigation} bottomOffset={16 + insets.bottom} />
         </AppBackground>
     );
 };
@@ -929,7 +979,9 @@ export const CheckoutScreen = ({ navigation }) => {
                         <MaterialCommunityIcons name="map-marker" size={24} color={theme.colors.primary} />
                         <View style={{flex: 1, marginLeft: 16}}>
                             <Text variant="bodyLarge" style={{color: theme.colors.onSurface, fontWeight: 'bold'}}>{selectedAddress?.type}</Text>
-                            <Text variant="bodyMedium" style={{color: theme.colors.onSurfaceVariant}}>{`${selectedAddress?.line1}, ${selectedAddress?.line2}`}</Text>
+                            <Text variant="bodyMedium" style={{color: theme.colors.onSurfaceVariant}}>
+                                {[selectedAddress?.line1, selectedAddress?.line2].filter(Boolean).join(', ')}
+                            </Text>
                         </View>
                         <Button onPress={() => navigation.navigate('MyAddresses')}>Edit</Button>
                     </View>

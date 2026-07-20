@@ -148,14 +148,14 @@ export const GlassButton = ({ onPress, title, icon, style, disabled }) => {
 };
 
 // ─── BigRestaurantCard ────────────────────────────────────────────────────────
-export const BigRestaurantCard = ({ restaurant, theme, navigation, index }) => {
+export const BigRestaurantCard = ({ restaurant, theme, navigation, index, filterMode }) => {
     const { favorites, toggleFavorite } = useUser();
     const isFavorite = favorites.includes(restaurant.id);
 
     const getRatingColor = (r) => r >= 4 ? '#22C55E' : r >= 3 ? '#F59E0B' : '#EF4444';
 
     const handleFav = () => { triggerHaptic(); toggleFavorite(restaurant.id); };
-    const handlePress = () => { triggerHaptic(); navigation.navigate('RestaurantDetails', { restaurant }); };
+    const handlePress = () => { triggerHaptic(); navigation.navigate('RestaurantDetails', { restaurant, filterMode }); };
 
     return (
         <Animated.View entering={FadeInDown.delay(index * 80).duration(400)} style={bigStyles.wrapper}>
@@ -222,10 +222,10 @@ export const BigRestaurantCard = ({ restaurant, theme, navigation, index }) => {
 };
 
 // ─── RecommendedCard ──────────────────────────────────────────────────────────
-export const RecommendedCard = ({ restaurant, theme, navigation }) => {
+export const RecommendedCard = ({ restaurant, theme, navigation, filterMode }) => {
     return (
         <TouchableOpacity
-            onPress={() => { triggerHaptic(); navigation.navigate('RestaurantDetails', { restaurant: ALL_RESTAURANTS.find(r => r.id === restaurant.id) || restaurant }); }}
+            onPress={() => { triggerHaptic(); navigation.navigate('RestaurantDetails', { restaurant: ALL_RESTAURANTS.find(r => r.id === restaurant.id) || restaurant, filterMode }); }}
             activeOpacity={0.88}
             style={{ width: (SW - 48) / 2.3 }}
         >

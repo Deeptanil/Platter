@@ -136,14 +136,22 @@ export const UserProvider = ({ children }) => {
             if (status === 'granted') {
                 let location = await Location.getCurrentPositionAsync({});
                 let geocode = await Location.reverseGeocodeAsync(location.coords);
-                if (geocode[0]) {
+                if (geocode && geocode[0]) {
                     const { street, district, city, postalCode } = geocode[0];
+                    const parts1 = [];
+                    if (street && street.trim()) parts1.push(street.trim());
+                    if (district && district.trim()) parts1.push(district.trim());
+
+                    const parts2 = [];
+                    if (city && city.trim()) parts2.push(city.trim());
+                    if (postalCode && postalCode.trim()) parts2.push(postalCode.trim());
+
                     currentLocation = {
                         id: 'current_location',
                         type: 'Current Location',
-                        line1: `${street || ''}, ${district || ''}`,
-                        line2: `${city || ''}, ${postalCode || ''}`
-                    }
+                        line1: parts1.join(', ') || 'Current Location',
+                        line2: parts2.join(', ') || 'Mumbai, Maharashtra'
+                    };
                 }
             }
 

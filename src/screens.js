@@ -1,17 +1,17 @@
-import React, { useState, useMemo, useRef, useCallback, useEffect, useLayoutEffect } from 'react';
-import { View, ScrollView, TouchableOpacity, FlatList, Image, Pressable, StyleSheet, KeyboardAvoidingView, Platform, Dimensions, Modal, SafeAreaView, SectionList, Alert, TouchableWithoutFeedback, Keyboard } from 'react-native';
+import React, { useState, useMemo, useRef, useCallback, useEffect } from 'react';
+import { View, ScrollView, TouchableOpacity, FlatList, Image, Pressable, StyleSheet, KeyboardAvoidingView, Platform, Dimensions, Modal, SafeAreaView, Alert, TouchableWithoutFeedback, Keyboard } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { BlurView } from 'expo-blur';
 import { Text, Searchbar, Switch, Avatar, List, Divider, Button, Checkbox, Card, IconButton, RadioButton, SegmentedButtons, Menu, Chip, TextInput } from 'react-native-paper';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import ConfettiCannon from 'react-native-confetti-cannon';
-import Animated, { useSharedValue, useAnimatedStyle, withSpring, withTiming, withDelay, FadeIn } from 'react-native-reanimated';
+import Animated, { useSharedValue, useAnimatedStyle, withSpring, withTiming, withDelay, FadeIn, ZoomIn } from 'react-native-reanimated';
 import * as Haptics from 'expo-haptics';
 import * as ImagePicker from 'expo-image-picker';
 import { useNetInfo } from '@react-native-community/netinfo';
 import { useAppTheme, useSettings, useUser, useCart } from './context';
 import { BigRestaurantCard, RecommendedCard, CartFAB, GlassCard, GlassInput, AppBackground, GlassButton } from './components';
-import { ALL_RESTAURANTS, CATEGORIES, RECOMMENDED_RESTAURANTS_IDS, EXPLORE_MORE, MOODS } from './data';
+import { ALL_RESTAURANTS, CATEGORIES, MOODS } from './data';
 
 const triggerHaptic = () => Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
 
@@ -107,7 +107,7 @@ export const AuthScreen = ({ navigation }) => {
                             {stage === 'welcome' && (
                                 <View style={styles.stageContainer}>
                                     <Animated.View style={animatedTitleStyle}>
-                                        <Text style={[styles.appNameTitle, { color: theme.dark ? '#FFFFFF' : theme.colors.onSurface }]}>Platter</Text>
+                                        <Text style={[styles.appNameTitle, { color: theme.colors.primary, letterSpacing: 2 }]}>Platter</Text>
                                     </Animated.View>
                                     <Animated.View style={[{width: '100%'}, animatedCardStyle]}>
                                         <GlassCard>
@@ -132,15 +132,6 @@ export const AuthScreen = ({ navigation }) => {
                                                     <GlassInput label="Mobile Number" value={phone} onChangeText={(text) => setPhone(text.replace(/[^0-9]/g, ''))} keyboardType="number-pad" maxLength={10} />
                                                 </View>
                                             </View>
-                                            <Checkbox.Item
-                                                label="I'd like to get message updates"
-                                                status={receiveUpdates ? 'checked' : 'unchecked'}
-                                                onPress={() => setReceiveUpdates(!receiveUpdates)}
-                                                color={theme.colors.primary}
-                                                uncheckedColor={theme.dark ? "#E0E0E0" : theme.colors.onSurfaceVariant}
-                                                labelStyle={{color: theme.dark ? "#E0E0E0" : theme.colors.onSurfaceVariant, fontSize: 14}}
-                                                style={{width: '100%', marginTop: 10}}
-                                            />
                                         </GlassCard>
                                         <GlassButton title="Next" icon="arrow-right" onPress={handlePrimaryAction}/>
                                     </View>
@@ -176,7 +167,14 @@ export const AuthScreen = ({ navigation }) => {
     );
 };
 
-const HomeScreenHeader = ({ navigation, theme, isVegOnly, setIsVegOnly, selectedCategory, setSelectedCategory, selectedMood, setSelectedMood, confettiRef, netInfo }) => {
+const SORT_OPTIONS = [
+    { key: 'default', label: 'Default', icon: 'star' },
+    { key: 'rating', label: 'Top Rated', icon: 'star-circle' },
+    { key: 'delivery', label: 'Fastest Delivery', icon: 'clock-fast' },
+    { key: 'distance', label: 'Nearest First', icon: 'map-marker' },
+];
+
+const HomeScreenHeader = ({ navigation, theme, isVegOnly, setIsVegOnly, selectedCategory, setSelectedCategory, selectedMood, setSelectedMood, netInfo, sortOption, setSortOption }) => {
     const { user, selectedAddress } = useUser();
     const userInitial = user?.name ? user.name.charAt(0).toUpperCase() : 'G';
 
@@ -216,12 +214,10 @@ const HomeScreenHeader = ({ navigation, theme, isVegOnly, setIsVegOnly, selected
                 </View>
             </View>
             
-            <TouchableOpacity onPress={() => confettiRef.current?.start()}>
-                <View style={[styles.banner, bannerGlassStyle]}>
-                     <MaterialCommunityIcons name="motorbike" color={theme.colors.primary} size={24}/>
-                    <Text style={{color: theme.colors.onSurface, marginLeft: 10, fontWeight: 'bold'}}>Free Delivery on orders over ₹299 — only on Platter!</Text>
-                </View>
-            </TouchableOpacity>
+            <View style={[styles.banner, bannerGlassStyle]}>
+                <MaterialCommunityIcons name="motorbike" color={theme.colors.primary} size={24}/>
+                <Text style={{color: theme.colors.onSurface, marginLeft: 10, fontWeight: 'bold'}}>Free Delivery on orders over ₹299 — only on Platter!</Text>
+            </View>
 
             {netInfo?.isInternetReachable === false && (
                 <View style={[styles.networkBanner, { backgroundColor: theme.colors.surfaceVariant }]}>
@@ -261,8 +257,21 @@ const HomeScreenHeader = ({ navigation, theme, isVegOnly, setIsVegOnly, selected
                 showsHorizontalScrollIndicator={false}
                 contentContainerStyle={{paddingLeft: 16}}
             />
-            
-            <Text variant="titleLarge" style={{ fontWeight: 'bold', color: theme.colors.onSurface, marginHorizontal: 16, marginBottom: 16, marginTop: 24 }}>{selectedCategory === 'All' ? 'All Restaurants' : `Restaurants serving ${selectedCategory}`}</Text>
+
+            <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginHorizontal: 16, marginTop: 24, marginBottom: 16 }}>
+                <Text variant="titleLarge" style={{ fontWeight: 'bold', color: theme.colors.onSurface }}>{selectedCategory === 'All' ? 'All Restaurants' : `Serving ${selectedCategory}`}</Text>
+                <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ flexDirection: 'row', gap: 8 }}>
+                    {SORT_OPTIONS.map(opt => (
+                        <TouchableOpacity
+                            key={opt.key}
+                            onPress={() => setSortOption(opt.key)}
+                            style={[styles.sortChip, { backgroundColor: sortOption === opt.key ? theme.colors.primary : theme.colors.surfaceVariant }]}>
+                            <MaterialCommunityIcons name={opt.icon} size={14} color={sortOption === opt.key ? '#FFF' : theme.colors.onSurfaceVariant} style={{ marginRight: 4 }} />
+                            <Text style={{ fontSize: 12, color: sortOption === opt.key ? '#FFF' : theme.colors.onSurface }}>{opt.label}</Text>
+                        </TouchableOpacity>
+                    ))}
+                </ScrollView>
+            </View>
         </>
     );
 };
@@ -271,7 +280,7 @@ export const HomeScreen = ({ navigation }) => {
     const { isVegOnly, setIsVegOnly } = useSettings();
     const [selectedCategory, setSelectedCategory] = useState('All');
     const [selectedMood, setSelectedMood] = useState(null);
-    const confettiRef = useRef(null);
+    const [sortOption, setSortOption] = useState('default');
     const insets = useSafeAreaInsets();
     const netInfo = useNetInfo();
 
@@ -287,9 +296,13 @@ export const HomeScreen = ({ navigation }) => {
             const matchesMood = !selectedMood || (res.moods && res.moods.includes(selectedMood));
             return matchesCategory && matchesMood;
         });
+
+        if (sortOption === 'rating') restaurants = [...restaurants].sort((a, b) => b.rating - a.rating);
+        else if (sortOption === 'delivery') restaurants = [...restaurants].sort((a, b) => a.deliveryTime - b.deliveryTime);
+        else if (sortOption === 'distance') restaurants = [...restaurants].sort((a, b) => parseFloat(a.distance) - parseFloat(b.distance));
         
         return restaurants;
-    }, [isVegOnly, selectedCategory, selectedMood]);
+    }, [isVegOnly, selectedCategory, selectedMood, sortOption]);
     
     const renderRestaurantCard = useCallback(({ item, index }) => (
         <BigRestaurantCard 
@@ -316,15 +329,15 @@ export const HomeScreen = ({ navigation }) => {
                         setSelectedCategory={setSelectedCategory}
                         selectedMood={selectedMood}
                         setSelectedMood={setSelectedMood}
-                        confettiRef={confettiRef}
                         netInfo={netInfo}
+                        sortOption={sortOption}
+                        setSortOption={setSortOption}
                     />
                 }
                 ListEmptyComponent={<View style={{alignItems: 'center', marginTop: 50}}><Text style={{color: theme.colors.onSurface}}>No restaurants found. Try changing your filters!</Text></View>}
                 contentContainerStyle={{ paddingTop: insets.top, paddingBottom: 80 }}
             />
             <CartFAB navigation={navigation}/>
-            <ConfettiCannon count={200} origin={{x: -10, y: 0}} autoStart={false} ref={confettiRef} fadeOut/>
         </AppBackground>
     );
 };
@@ -423,18 +436,31 @@ export const RestaurantDetailsScreen = ({ navigation, route }) => {
                 renderItem={({item}) => <MenuItemCard item={item} restaurant={restaurant} />}
                 ListHeaderComponent={() => (
                     <>
+                        {/* Hero Image */}
+                        <Image source={{ uri: restaurant.image }} style={styles.restaurantHeroImage} resizeMode="cover" />
+                        <View style={styles.restaurantHeroOverlay}>
+                            <View style={[styles.ratingBox, {backgroundColor: getRatingColor(restaurant.rating)}]}>
+                                <Text style={{color: '#FFFFFF', fontWeight: 'bold'}}>{restaurant.rating} ★</Text>
+                            </View>
+                            {restaurant.offer && <View style={styles.offerBadge}><Text style={{color: '#FFF', fontWeight: 'bold', fontSize: 12}}>🎉 {restaurant.offer}</Text></View>}
+                        </View>
+
                         <View style={{padding: 16}}>
-                            <View style={{flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start'}}>
-                                <View style={{flex: 1}}>
-                                    <Text variant="headlineMedium" style={{fontWeight: 'bold', color: theme.colors.onSurface}}>{restaurant.name}</Text>
-                                    <Text variant="bodyMedium" style={{color: theme.colors.onSurfaceVariant, marginTop: 4}}>{restaurant.distance}</Text>
-                                    <Text variant="bodyMedium" style={{color: theme.colors.onSurfaceVariant}}>{restaurant.deliveryTime} mins</Text>
+                            <Text variant="headlineMedium" style={{fontWeight: 'bold', color: theme.colors.onSurface}}>{restaurant.name}</Text>
+                            <View style={{flexDirection: 'row', alignItems: 'center', marginTop: 6, gap: 16}}>
+                                <View style={{flexDirection: 'row', alignItems: 'center'}}>
+                                    <MaterialCommunityIcons name="clock-outline" size={14} color={theme.colors.onSurfaceVariant}/>
+                                    <Text variant="bodyMedium" style={{color: theme.colors.onSurfaceVariant, marginLeft: 4}}>{restaurant.deliveryTime} min</Text>
                                 </View>
-                                <View style={[styles.ratingBox, {backgroundColor: getRatingColor(restaurant.rating)}]}>
-                                    <Text style={{color: '#FFFFFF', fontWeight: 'bold'}}>{restaurant.rating} ★</Text>
+                                <View style={{flexDirection: 'row', alignItems: 'center'}}>
+                                    <MaterialCommunityIcons name="map-marker-outline" size={14} color={theme.colors.onSurfaceVariant}/>
+                                    <Text variant="bodyMedium" style={{color: theme.colors.onSurfaceVariant, marginLeft: 4}}>{restaurant.distance}</Text>
+                                </View>
+                                <View style={{flexDirection: 'row', alignItems: 'center'}}>
+                                    <MaterialCommunityIcons name="account-group-outline" size={14} color={theme.colors.onSurfaceVariant}/>
+                                    <Text variant="bodyMedium" style={{color: theme.colors.onSurfaceVariant, marginLeft: 4}}>{restaurant.reviews}</Text>
                                 </View>
                             </View>
-                            {restaurant.offer && <Text style={{color: theme.colors.primary, fontWeight: 'bold', marginTop: 8}}>• {restaurant.offer}</Text>}
                         </View>
 
                         <Divider style={{marginHorizontal: 16}}/>
@@ -515,12 +541,20 @@ export const CartScreen = ({ navigation }) => {
                 data={cartSections}
                 keyExtractor={(item) => item.title}
                 ListHeaderComponent={() => <Text variant="headlineMedium" style={{marginHorizontal: 16, marginTop: 16, marginBottom: 24, fontWeight: 'bold', color: theme.colors.onSurface}}>Your Order</Text>}
-                renderItem={({item}) => (
-                    <GlassCard style={{ marginHorizontal: 16, padding: 16, alignItems: 'flex-start' }}>
-                        <Text variant="titleLarge" style={{color: theme.colors.onSurface, marginBottom: 12}}>{item.title}</Text>
-                        {item.data.map(dish => <CartItemCard key={dish.id} item={dish} />)}
-                    </GlassCard>
-                )}
+                renderItem={({item}) => {
+                    const restaurantData = ALL_RESTAURANTS.find(r => r.name === item.title);
+                    return (
+                        <GlassCard style={{ marginHorizontal: 16, padding: 16, alignItems: 'flex-start' }}>
+                            <View style={{flexDirection: 'row', alignItems: 'center', marginBottom: 12}}>
+                                {restaurantData?.image && (
+                                    <Image source={{uri: restaurantData.image}} style={{width: 40, height: 40, borderRadius: 20, marginRight: 10}} />
+                                )}
+                                <Text variant="titleLarge" style={{color: theme.colors.onSurface, flex: 1}}>{item.title}</Text>
+                            </View>
+                            {item.data.map(dish => <CartItemCard key={dish.id} item={dish} />)}
+                        </GlassCard>
+                    );
+                }}
                 ListFooterComponent={() => (
                     <>
                         {cart.length > 0 && (
@@ -530,8 +564,17 @@ export const CartScreen = ({ navigation }) => {
                         )}
                     </>
                 )}
-                ListEmptyComponent={<View style={{alignItems: 'center', marginTop: 50}}><Text style={{color: theme.colors.onSurface, fontSize: 16}}>Your cart is empty.</Text></View>}
-                contentContainerStyle={{paddingBottom: 40}}
+                ListEmptyComponent={
+                    <View style={{alignItems: 'center', marginTop: 80, paddingHorizontal: 32}}>
+                        <MaterialCommunityIcons name="cart-off" size={80} color={theme.colors.onSurfaceVariant} />
+                        <Text variant="headlineSmall" style={{color: theme.colors.onSurface, fontWeight: 'bold', marginTop: 16, textAlign: 'center'}}>Your cart is empty</Text>
+                        <Text variant="bodyMedium" style={{color: theme.colors.onSurfaceVariant, marginTop: 8, textAlign: 'center'}}>Add something delicious from Mumbai's best spots</Text>
+                        <View style={{marginTop: 24, width: '100%'}}>
+                            <GlassButton title="Browse Restaurants" icon="silverware-fork-knife" onPress={() => navigation.goBack()} />
+                        </View>
+                    </View>
+                }
+                contentContainerStyle={{paddingBottom: 40, flexGrow: 1}}
             />
         </AppBackground>
     );
@@ -545,7 +588,7 @@ export const CheckoutScreen = ({ navigation }) => {
     const [tip, setTip] = useState(0);
     const originalDeliveryFee = 25;
 
-    const deliveryFee = cartTotal > 300 ? 0 : originalDeliveryFee;
+    const deliveryFee = cartTotal > 299 ? 0 : originalDeliveryFee;
     const convenienceFee = cartTotal * 0.02;
     const taxes = cartTotal * 0.18;
     const grandTotal = cartTotal + deliveryFee + taxes + convenienceFee + tip;
@@ -586,8 +629,8 @@ export const CheckoutScreen = ({ navigation }) => {
                 <GlassCard style={{alignItems: 'flex-start'}}>
                      <Text variant="titleLarge" style={{color: theme.colors.onSurface, marginBottom: 16}}>Add a tip</Text>
                      <View style={{flexDirection: 'row', justifyContent: 'space-around', width: '100%'}}>
-                        {[0, 10, 20, 30].map(tipValue => (
-                             <TouchableOpacity key={tipValue} style={[styles.pillButton, {backgroundColor: tip === tipValue ? theme.colors.primary : theme.colors.surfaceVariant}]} onPress={() => { triggerHaptic(); setTip(tipValue);}}>
+                        {[0, 25, 50, 100].map(tipValue => (
+                             <TouchableOpacity key={tipValue} style={[styles.pillButton, {backgroundColor: tip === tipValue ? theme.colors.primary : theme.colors.surfaceVariant}]} onPress={() => { triggerHaptic(); setTip(tipValue);}}>  
                                 <Text style={{color: tip === tipValue ? '#FFFFFF' : theme.colors.onSurface}}>{tipValue === 0 ? 'No tip' : `₹${tipValue}`}</Text>
                              </TouchableOpacity>
                         ))}
@@ -598,7 +641,7 @@ export const CheckoutScreen = ({ navigation }) => {
                         <List.Subheader>Bill Details</List.Subheader>
                         <List.Item title="Item Total" titleStyle={{color: theme.colors.onSurface}} right={() => <Text style={{color: theme.colors.onSurfaceVariant}}>₹{cartTotal.toFixed(2)}</Text>} />
                         <List.Item title="Delivery Fee" titleStyle={{color: theme.colors.onSurface}} right={() => (
-                            cartTotal > 300 ? (
+                            cartTotal > 299 ? (
                                 <View style={{flexDirection: 'row', alignItems: 'center'}}>
                                     <Text style={{textDecorationLine: 'line-through', color: theme.colors.onSurfaceVariant}}>₹{originalDeliveryFee.toFixed(2)}</Text>
                                     <Text style={{marginLeft: 8, color: 'green', fontWeight: 'bold'}}>FREE</Text>
@@ -636,22 +679,56 @@ export const CheckoutScreen = ({ navigation }) => {
     )
 }
 
+const ORDER_STEPS = [
+    { icon: 'check-circle', label: 'Order Placed' },
+    { icon: 'chef-hat', label: 'Preparing' },
+    { icon: 'motorbike', label: 'On the way' },
+    { icon: 'home-circle', label: 'Delivered' },
+];
+
 export const OrderConfirmationScreen = ({ navigation }) => {
     const { theme } = useAppTheme();
     const { lastOrder } = useCart();
+    const [activeStep, setActiveStep] = useState(0);
     
     useEffect(() => {
         Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+        // Simulate order progress
+        const timers = [
+            setTimeout(() => setActiveStep(1), 1500),
+            setTimeout(() => setActiveStep(2), 3000),
+        ];
+        return () => timers.forEach(clearTimeout);
     },[]);
 
     return(
         <AppBackground>
             <ConfettiCannon count={200} origin={{x: -10, y: 0}} autoStart={true} fadeOut={true} explosionSpeed={400} />
             <View style={styles.confirmationContainer}>
-                <MaterialCommunityIcons name="check-decagram" size={100} color={theme.dark ? theme.colors.primary : '#4CAF50'} />
-                <Text variant="headlineMedium" style={{color: theme.colors.onSurface, marginTop: 24, textAlign: 'center'}}>Order Placed Successfully!</Text>
-                <Text variant="bodyLarge" style={{color: theme.colors.onSurfaceVariant, marginTop: 8}}>Order ID: {lastOrder?.id}</Text>
-                <Text variant="titleMedium" style={{color: theme.colors.onSurface, marginTop: 24}}>Estimated Delivery by {lastOrder?.deliveryTime}</Text>
+                <Animated.View entering={ZoomIn.duration(600)}>
+                    <MaterialCommunityIcons name="check-decagram" size={100} color={theme.colors.primary} />
+                </Animated.View>
+                <Text variant="headlineMedium" style={{color: theme.colors.onSurface, marginTop: 24, textAlign: 'center', fontWeight: 'bold'}}>Order Placed!</Text>
+                <Text variant="bodyLarge" style={{color: theme.colors.onSurfaceVariant, marginTop: 4}}>Order ID: {lastOrder?.id}</Text>
+                <Text variant="titleMedium" style={{color: theme.colors.onSurface, marginTop: 8}}>ETA: {lastOrder?.deliveryTime}</Text>
+
+                {/* Step Tracker */}
+                <View style={styles.stepTracker}>
+                    {ORDER_STEPS.map((step, index) => (
+                        <React.Fragment key={step.label}>
+                            <View style={styles.stepItem}>
+                                <View style={[styles.stepIcon, { backgroundColor: index <= activeStep ? theme.colors.primary : theme.colors.surfaceVariant }]}>
+                                    <MaterialCommunityIcons name={step.icon} size={20} color={index <= activeStep ? '#FFF' : theme.colors.onSurfaceVariant} />
+                                </View>
+                                <Text style={{ fontSize: 11, color: index <= activeStep ? theme.colors.primary : theme.colors.onSurfaceVariant, marginTop: 4, textAlign: 'center' }}>{step.label}</Text>
+                            </View>
+                            {index < ORDER_STEPS.length - 1 && (
+                                <View style={[styles.stepLine, { backgroundColor: index < activeStep ? theme.colors.primary : theme.colors.surfaceVariant }]} />
+                            )}
+                        </React.Fragment>
+                    ))}
+                </View>
+
                 <View style={{position: 'absolute', bottom: 40, width: '100%', paddingHorizontal: 24}}>
                     <GlassButton title="Back to Home" onPress={() => navigation.popToTop()}/>
                 </View>
@@ -815,16 +892,7 @@ export const DeliveryDetailsScreen = ({ route, navigation }) => {
     )
 };
 
-export const PlaceholderScreen = ({route}) => {
-    const { theme } = useAppTheme();
-    return (
-        <AppBackground>
-            <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}>
-                <Text variant="headlineSmall" style={{color: theme.colors.onSurface}}>{route.name}</Text>
-            </View>
-        </AppBackground>
-    );
-}
+// PlaceholderScreen removed — all screens are now implemented
 
 export const MyCollectionsScreen = ({navigation}) => {
     const { theme } = useAppTheme();
@@ -846,7 +914,17 @@ export const MyCollectionsScreen = ({navigation}) => {
 
 export const PastOrdersScreen = ({ navigation }) => {
     const { theme } = useAppTheme();
-    const { pastOrders } = useCart();
+    const { pastOrders, addToCart } = useCart();
+
+    const handleReorder = (order) => {
+        triggerHaptic();
+        order.items.forEach(item => {
+            for (let i = 0; i < item.quantity; i++) {
+                addToCart(item);
+            }
+        });
+        navigation.navigate('Cart');
+    };
 
     return(
         <AppBackground>
@@ -855,9 +933,15 @@ export const PastOrdersScreen = ({ navigation }) => {
                 keyExtractor={item => item.id}
                 renderItem={({item}) => (
                     <GlassCard style={{padding: 16, marginHorizontal: 16, marginBottom: 16, alignItems: 'flex-start'}}>
-                        <View style={{flexDirection: 'row', justifyContent: 'space-between', width: '100%'}}>
-                            <Text variant="titleMedium" style={{fontWeight: 'bold', color: theme.colors.onSurface, flex: 1, flexShrink: 1, marginRight: 8}}>Order {item.id}</Text>
-                            <Text variant="bodyMedium" style={{color: theme.colors.onSurfaceVariant}}>{item.date}</Text>
+                        <View style={{flexDirection: 'row', justifyContent: 'space-between', width: '100%', alignItems: 'flex-start'}}>
+                            <View style={{flex: 1}}>
+                                <Text variant="titleMedium" style={{fontWeight: 'bold', color: theme.colors.onSurface}}>Order {item.id}</Text>
+                                <Text variant="bodySmall" style={{color: theme.colors.onSurfaceVariant, marginTop: 2}}>{item.date}</Text>
+                            </View>
+                            <TouchableOpacity onPress={() => handleReorder(item)} style={[styles.reorderBtn, {backgroundColor: theme.colors.primaryContainer}]}>
+                                <MaterialCommunityIcons name="reload" size={14} color={theme.colors.primary} />
+                                <Text style={{color: theme.colors.primary, fontWeight: 'bold', fontSize: 13, marginLeft: 4}}>Reorder</Text>
+                            </TouchableOpacity>
                         </View>
                         <Divider style={{marginVertical: 12, width: '100%'}}/>
                         {item.items.map(dish => (
@@ -866,15 +950,15 @@ export const PastOrdersScreen = ({ navigation }) => {
                                 <Text style={{color: theme.colors.onSurfaceVariant}}>₹{dish.price * dish.quantity}</Text>
                             </View>
                         ))}
-                         <Divider style={{marginVertical: 12, width: '100%'}}/>
-                         <View style={{flexDirection: 'row', justifyContent: 'space-between', width: '100%'}}>
+                        <Divider style={{marginVertical: 12, width: '100%'}}/>
+                        <View style={{flexDirection: 'row', justifyContent: 'space-between', width: '100%'}}>
                             <Text variant="titleMedium" style={{fontWeight: 'bold', color: theme.colors.onSurface}}>Total Paid</Text>
                             <Text variant="titleMedium" style={{fontWeight: 'bold', color: theme.colors.onSurface}}>₹{item.total.toFixed(2)}</Text>
                         </View>
                     </GlassCard>
                 )}
-                ListEmptyComponent={<View style={{alignItems: 'center', marginTop: 50}}><Text style={{color: theme.colors.onSurface, fontSize: 16}}>No past orders found.</Text></View>}
-                contentContainerStyle={{paddingTop: 16, paddingBottom: 40}}
+                ListEmptyComponent={<View style={{alignItems: 'center', marginTop: 80, paddingHorizontal: 32}}><MaterialCommunityIcons name="history" size={80} color={theme.colors.onSurfaceVariant} /><Text variant="headlineSmall" style={{color: theme.colors.onSurface, fontWeight: 'bold', marginTop: 16}}>No orders yet</Text><Text style={{color: theme.colors.onSurfaceVariant, marginTop: 8, textAlign: 'center'}}>Your past orders will show up here</Text></View>}
+                contentContainerStyle={{paddingTop: 16, paddingBottom: 40, flexGrow: 1}}
             />
         </AppBackground>
     )
@@ -947,7 +1031,7 @@ export const SettingsScreen = ({ navigation }) => {
                 <TouchableOpacity onPress={handleVersionClick}>
                     <View style={{alignItems: 'center', paddingVertical: 20}}>
                         <Text variant="bodySmall" style={{color: theme.colors.onSurfaceVariant}}>
-                            Version 0.5.6
+                            Platter v1.0.0
                         </Text>
                     </View>
                 </TouchableOpacity>
@@ -1101,12 +1185,31 @@ export const SearchScreen = ({ navigation }) => {
         return allDishes.filter(dish => dish.name.toLowerCase().includes(searchQuery.toLowerCase()));
     }, [searchQuery, allDishes]);
 
+    const filteredCategories = useMemo(() => {
+        if (!searchQuery) return [];
+        const allTags = [...new Set(ALL_RESTAURANTS.flatMap(r => r.tags))];
+        return allTags
+            .filter(tag => tag.toLowerCase().includes(searchQuery.toLowerCase()))
+            .map(tag => ({ tag, restaurants: ALL_RESTAURANTS.filter(r => r.tags.includes(tag)) }));
+    }, [searchQuery]);
+
     const renderSearchResult = ({ item }) => {
         if (searchType === 'restaurant') {
             return <BigRestaurantCard restaurant={item} theme={theme} navigation={navigation} index={0} />;
         }
-        return <MenuItemCard item={item} restaurant={item.parentRestaurant} />;
+        if (searchType === 'dish') {
+            return <MenuItemCard item={item} restaurant={item.parentRestaurant} />;
+        }
+        // category
+        return (
+            <GlassCard style={{ marginHorizontal: 16, marginBottom: 12, alignItems: 'flex-start', padding: 12 }}>
+                <Text variant="titleMedium" style={{ color: theme.colors.onSurface, fontWeight: 'bold' }}>{item.tag}</Text>
+                <Text variant="bodySmall" style={{ color: theme.colors.onSurfaceVariant }}>{item.restaurants.length} restaurants</Text>
+            </GlassCard>
+        );
     };
+
+    const searchData = searchType === 'restaurant' ? filteredRestaurants : searchType === 'dish' ? filteredDishes : filteredCategories;
 
     return(
         <AppBackground>
@@ -1114,7 +1217,7 @@ export const SearchScreen = ({ navigation }) => {
                 <View style={{flexDirection: 'row', alignItems: 'center', paddingHorizontal: 8}}>
                     <IconButton icon="arrow-left" onPress={() => navigation.goBack()} />
                     <Searchbar 
-                        placeholder={searchType === 'restaurant' ? 'Search for restaurants' : 'Search for dishes'}
+                        placeholder={searchType === 'restaurant' ? 'Search restaurants...' : searchType === 'dish' ? 'Search dishes...' : 'Search categories...'}
                         value={searchQuery}
                         onChangeText={setSearchQuery}
                         style={{flex: 1}}
@@ -1127,16 +1230,22 @@ export const SearchScreen = ({ navigation }) => {
                         onValueChange={setSearchType}
                         theme={segmentedButtonsTheme}
                         buttons={[
-                            { value: 'restaurant', label: 'Restaurants' },
+                            { value: 'restaurant', label: 'Places' },
                             { value: 'dish', label: 'Dishes' },
+                            { value: 'category', label: 'Category' },
                         ]}
                     />
                 </View>
                 <FlatList
-                    data={searchType === 'restaurant' ? filteredRestaurants : filteredDishes}
-                    keyExtractor={(item, index) => item.id + index.toString()}
+                    data={searchData}
+                    keyExtractor={(item, index) => (item.id || item.tag || '') + index.toString()}
                     renderItem={renderSearchResult}
-                    ListEmptyComponent={<Text style={{textAlign: 'center', marginTop: 40}}>No results found.</Text>}
+                    ListEmptyComponent={
+                        <View style={{alignItems: 'center', marginTop: 60}}>
+                            <MaterialCommunityIcons name={searchQuery ? 'magnify-close' : 'magnify'} size={64} color={theme.colors.onSurfaceVariant} />
+                            <Text style={{textAlign: 'center', marginTop: 12, color: theme.colors.onSurfaceVariant}}>{searchQuery ? 'No results found.' : 'Start typing to search...'}</Text>
+                        </View>
+                    }
                 />
             </View>
         </AppBackground>
@@ -1151,22 +1260,15 @@ const styles = StyleSheet.create({
     searchBarDark: { backgroundColor: 'rgba(255, 255, 255, 0.1)'},
     vegToggleContainer: { alignItems: 'center', marginLeft: 16 },
     banner: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', marginHorizontal: 16, padding: 16, borderRadius: 20, marginBottom: 16 },
-    networkBanner: { 
-        flexDirection: 'row', 
-        alignItems: 'center', 
-        justifyContent: 'center', 
-        marginHorizontal: 16, 
-        padding: 12, 
-        borderRadius: 12, 
-        marginBottom: 16 
-    },
+    networkBanner: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', marginHorizontal: 16, padding: 12, borderRadius: 12, marginBottom: 16 },
     categoryItem: { alignItems: 'center', marginRight: 20 },
     categoryImage: { width: 60, height: 60, borderRadius: 30, marginBottom: 8 },
     moodItem: { width: 100, height: 100, justifyContent: 'center', alignItems: 'center', borderRadius: 20, marginRight: 12 },
+    sortChip: { flexDirection: 'row', alignItems: 'center', paddingVertical: 6, paddingHorizontal: 12, borderRadius: 20 },
     authContainer: { flex: 1 },
     authContent: { flex: 1, alignItems: 'center', padding: 20 },
     stageContainer: { flex: 1, width: '100%', justifyContent: 'space-around', alignItems: 'center', paddingBottom: 30},
-    appNameTitle: { fontSize: 72, fontWeight: 'bold', textAlign: 'center', textShadowColor: 'rgba(0, 0, 0, 0.2)', textShadowOffset: {width: 1, height: 1}, textShadowRadius: 3 },
+    appNameTitle: { fontSize: 80, fontWeight: '900', textAlign: 'center', letterSpacing: 2 },
     stageTitle: { fontSize: 32, fontWeight: '600', textAlign: 'center', textShadowColor: 'rgba(0, 0, 0, 0.2)', textShadowOffset: {width: 1, height: 1}, textShadowRadius: 3 },
     authTitle: { fontWeight: 'bold', marginBottom: 4, textAlign: 'center' },
     authSubtitle: { textAlign: 'center', opacity: 0.9, fontSize: 16 },
@@ -1185,5 +1287,13 @@ const styles = StyleSheet.create({
     addButton: { borderRadius: 8, height: 42, justifyContent: 'center', alignItems: 'center', width: 110},
     footer: { position: 'absolute', bottom: 0, left: 0, right: 0, padding: 16, paddingTop: 8, borderTopWidth: 1, borderColor: 'rgba(128,128,128,0.2)'},
     confirmationContainer: {flex: 1, justifyContent: 'center', alignItems: 'center', padding: 24},
-    profileInput: {width: '100%', marginBottom: 16}
+    profileInput: {width: '100%', marginBottom: 16},
+    restaurantHeroImage: { width: '100%', height: 220 },
+    restaurantHeroOverlay: { position: 'absolute', top: 12, right: 12, flexDirection: 'row', gap: 8 },
+    offerBadge: { backgroundColor: 'rgba(108,59,245,0.85)', paddingHorizontal: 10, paddingVertical: 4, borderRadius: 12 },
+    stepTracker: { flexDirection: 'row', alignItems: 'flex-start', justifyContent: 'center', marginTop: 32, paddingHorizontal: 8 },
+    stepItem: { alignItems: 'center', width: 64 },
+    stepIcon: { width: 40, height: 40, borderRadius: 20, justifyContent: 'center', alignItems: 'center' },
+    stepLine: { height: 3, flex: 1, marginTop: 18, marginHorizontal: 4, borderRadius: 2 },
+    reorderBtn: { flexDirection: 'row', alignItems: 'center', paddingHorizontal: 12, paddingVertical: 6, borderRadius: 16 },
 });

@@ -114,7 +114,7 @@ export const UserProvider = ({ children }) => {
     const [selectedAddressId, setSelectedAddressId] = useState(null);
     const [defaultAddressId, setDefaultAddressId] = useState(null);
 
-    const FALLBACK_LOCATION = { id: 'current_location', type: 'Current Location', line1: 'Unable to fetch location', line2: 'Bengaluru, Karnataka'};
+    const FALLBACK_LOCATION = { id: 'current_location', type: 'Current Location', line1: 'Unable to fetch location', line2: 'Mumbai, Maharashtra'};
 
     const loadData = async () => {
         try {

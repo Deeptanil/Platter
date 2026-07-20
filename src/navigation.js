@@ -5,7 +5,7 @@ import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import { PaperProvider } from 'react-native-paper';
 
 import { useAppTheme, useUser } from './context';
-import { AuthScreen, HomeScreen, RestaurantDetailsScreen, CartScreen, MyCollectionsScreen, PlaceholderScreen, SettingsScreen, CheckoutScreen, OrderConfirmationScreen, AddressListScreen, DeliveryDetailsScreen, SearchScreen, PastOrdersScreen, ProfileScreen } from './screens';
+import { AuthScreen, HomeScreen, RestaurantDetailsScreen, CartScreen, MyCollectionsScreen, SettingsScreen, CheckoutScreen, OrderConfirmationScreen, AddressListScreen, DeliveryDetailsScreen, SearchScreen, PastOrdersScreen, ProfileScreen } from './screens';
 
 const Stack = createNativeStackNavigator();
 

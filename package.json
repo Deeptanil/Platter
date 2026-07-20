@@ -34,8 +34,10 @@
     "react-native-svg": "15.12.1",
     "react-native-web": "^0.21.0",
     "react-native-worklets": "0.5.1",
-    "react-native-worklets-core": "~1.1.2",
-    "use-latest-callback": "^0.3.4"
+    "react-native-worklets-core": "~1.1.2"
   },
-  "private": true
+  "private": true,
+  "overrides": {
+    "use-latest-callback": "^0.2.3"
+  }
 }

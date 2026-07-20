@@ -23,7 +23,6 @@ export const AuthScreen = ({ navigation }) => {
     const [name, setName] = useState('');
     const [email, setEmail] = useState('');
     const [isPopupVisible, setPopupVisible] = useState(false);
-    const [receiveUpdates, setReceiveUpdates] = useState(true);
     const [isEmailValid, setIsEmailValid] = useState(true);
     const insets = useSafeAreaInsets();
 
@@ -76,7 +75,6 @@ export const AuthScreen = ({ navigation }) => {
         else if (stage === 'phone' && phone.length === 10) setStage('details');
         else if (stage === 'details' && name && isEmailValid) {
             setUser({ name, email, phone });
-            navigation.replace('MainApp');
         }
     };
     
@@ -227,51 +225,61 @@ const HomeScreenHeader = ({ navigation, theme, isVegOnly, setIsVegOnly, selected
             )}
             
             <Text variant="titleLarge" style={{ fontWeight: 'bold', color: theme.colors.onSurface, marginHorizontal: 16, marginBottom: 12 }}>Categories</Text>
-            <FlatList
-                horizontal
-                data={CATEGORIES}
-                keyExtractor={(item) => item.name}
-                renderItem={({ item }) => (
-                    <TouchableOpacity style={styles.categoryItem} onPress={() => setSelectedCategory(item.name)}>
+            <ScrollView 
+                horizontal 
+                showsHorizontalScrollIndicator={false} 
+                contentContainerStyle={{paddingLeft: 16}}
+            >
+                {CATEGORIES.map((item) => (
+                    <TouchableOpacity key={item.name} style={styles.categoryItem} onPress={() => setSelectedCategory(item.name)}>
                         <Image source={{ uri: item.image }} style={[styles.categoryImage, selectedCategory === item.name && {borderColor: theme.colors.primary, borderWidth: 2}]} />
                         <Text style={{ color: theme.colors.onSurfaceVariant, fontSize: 12 }}>{item.name}</Text>
                     </TouchableOpacity>
-                )}
-                showsHorizontalScrollIndicator={false}
-                contentContainerStyle={{paddingLeft: 16}}
-            />
+                ))}
+            </ScrollView>
 
             <Text variant="titleLarge" style={{ fontWeight: 'bold', color: theme.colors.onSurface, marginHorizontal: 16, marginBottom: 12, marginTop: 24 }}>What's Your Mood?</Text>
-            <FlatList
-                horizontal
-                data={MOODS}
-                keyExtractor={(item) => item.key}
-                renderItem={({ item }) => (
+            <ScrollView 
+                horizontal 
+                showsHorizontalScrollIndicator={false} 
+                contentContainerStyle={{paddingLeft: 16}}
+            >
+                {MOODS.map((item) => (
                     <TouchableOpacity 
+                        key={item.key}
                         style={[styles.moodItem, {backgroundColor: theme.colors.surfaceVariant}, selectedMood === item.key && {backgroundColor: theme.colors.primary}]} 
                         onPress={() => setSelectedMood(prev => prev === item.key ? null : item.key)}>
                         <MaterialCommunityIcons name={item.icon} size={24} color={selectedMood === item.key ? (theme.dark ? theme.colors.background : '#FFFFFF') : theme.colors.primary} />
                         <Text style={{ color: selectedMood === item.key ? (theme.dark ? theme.colors.background : '#FFFFFF') : theme.colors.onSurface, marginTop: 8, textAlign: 'center' }}>{item.name}</Text>
                     </TouchableOpacity>
-                )}
-                showsHorizontalScrollIndicator={false}
-                contentContainerStyle={{paddingLeft: 16}}
-            />
+                ))}
+            </ScrollView>
 
-            <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginHorizontal: 16, marginTop: 24, marginBottom: 16 }}>
+            <Text variant="titleLarge" style={{ fontWeight: 'bold', color: theme.colors.onSurface, marginHorizontal: 16, marginBottom: 12, marginTop: 24 }}>Recommended for You</Text>
+            <ScrollView 
+                horizontal 
+                showsHorizontalScrollIndicator={false} 
+                contentContainerStyle={{paddingLeft: 16, gap: 12}}
+            >
+                {ALL_RESTAURANTS.slice(0, 6).map((item) => (
+                    <RecommendedCard key={item.id} restaurant={item} theme={theme} navigation={navigation} />
+                ))}
+            </ScrollView>
+
+            <View style={{ marginHorizontal: 16, marginTop: 24, marginBottom: 8 }}>
                 <Text variant="titleLarge" style={{ fontWeight: 'bold', color: theme.colors.onSurface }}>{selectedCategory === 'All' ? 'All Restaurants' : `Serving ${selectedCategory}`}</Text>
-                <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ flexDirection: 'row', gap: 8 }}>
-                    {SORT_OPTIONS.map(opt => (
-                        <TouchableOpacity
-                            key={opt.key}
-                            onPress={() => setSortOption(opt.key)}
-                            style={[styles.sortChip, { backgroundColor: sortOption === opt.key ? theme.colors.primary : theme.colors.surfaceVariant }]}>
-                            <MaterialCommunityIcons name={opt.icon} size={14} color={sortOption === opt.key ? '#FFF' : theme.colors.onSurfaceVariant} style={{ marginRight: 4 }} />
-                            <Text style={{ fontSize: 12, color: sortOption === opt.key ? '#FFF' : theme.colors.onSurface }}>{opt.label}</Text>
-                        </TouchableOpacity>
-                    ))}
-                </ScrollView>
             </View>
+            <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ paddingHorizontal: 16, paddingBottom: 16, gap: 8 }}>
+                {SORT_OPTIONS.map(opt => (
+                    <TouchableOpacity
+                        key={opt.key}
+                        onPress={() => setSortOption(opt.key)}
+                        style={[styles.sortChip, { backgroundColor: sortOption === opt.key ? theme.colors.primary : theme.colors.surfaceVariant }]}>
+                        <MaterialCommunityIcons name={opt.icon} size={14} color={sortOption === opt.key ? '#FFF' : theme.colors.onSurfaceVariant} style={{ marginRight: 4 }} />
+                        <Text style={{ fontSize: 12, color: sortOption === opt.key ? '#FFF' : theme.colors.onSurface }}>{opt.label}</Text>
+                    </TouchableOpacity>
+                ))}
+            </ScrollView>
         </>
     );
 };
@@ -299,7 +307,13 @@ export const HomeScreen = ({ navigation }) => {
 
         if (sortOption === 'rating') restaurants = [...restaurants].sort((a, b) => b.rating - a.rating);
         else if (sortOption === 'delivery') restaurants = [...restaurants].sort((a, b) => a.deliveryTime - b.deliveryTime);
-        else if (sortOption === 'distance') restaurants = [...restaurants].sort((a, b) => parseFloat(a.distance) - parseFloat(b.distance));
+        else if (sortOption === 'distance') {
+            const parseDist = (str) => {
+                const val = parseFloat(str);
+                return isNaN(val) ? 999 : val;
+            };
+            restaurants = [...restaurants].sort((a, b) => parseDist(a.distance) - parseDist(b.distance));
+        }
         
         return restaurants;
     }, [isVegOnly, selectedCategory, selectedMood, sortOption]);
@@ -352,7 +366,7 @@ const MenuItemCard = ({ item, restaurant }) => {
         <View style={[styles.quantityContainer, {backgroundColor: theme.colors.primary}]}>
             <IconButton icon="minus" onPress={() => { triggerHaptic(); removeFromCart(item); }} iconColor={"#FFFFFF"} size={20} style={{margin: 0, height: 36, width: 36}}/>
             <Text style={{color: "#FFFFFF", fontWeight: 'bold', fontSize: 18}}>{quantity}</Text>
-            <IconButton icon="plus" onPress={() => { triggerHaptic(); addToCart(item); }} iconColor={"#FFFFFF"} size={20} style={{margin: 0, height: 36, width: 36}}/>
+            <IconButton icon="plus" onPress={() => { triggerHaptic(); addToCart({...item, restaurantName: restaurant.name}); }} iconColor={"#FFFFFF"} size={20} style={{margin: 0, height: 36, width: 36}}/>
         </View>
     );
 
@@ -436,13 +450,15 @@ export const RestaurantDetailsScreen = ({ navigation, route }) => {
                 renderItem={({item}) => <MenuItemCard item={item} restaurant={restaurant} />}
                 ListHeaderComponent={() => (
                     <>
-                        {/* Hero Image */}
-                        <Image source={{ uri: restaurant.image }} style={styles.restaurantHeroImage} resizeMode="cover" />
-                        <View style={styles.restaurantHeroOverlay}>
-                            <View style={[styles.ratingBox, {backgroundColor: getRatingColor(restaurant.rating)}]}>
-                                <Text style={{color: '#FFFFFF', fontWeight: 'bold'}}>{restaurant.rating} ★</Text>
+                        {/* Hero Image & Overlay Wrapper */}
+                        <View style={{ position: 'relative' }}>
+                            <Image source={{ uri: restaurant.image }} style={styles.restaurantHeroImage} resizeMode="cover" />
+                            <View style={styles.restaurantHeroOverlay}>
+                                <View style={[styles.ratingBox, {backgroundColor: getRatingColor(restaurant.rating)}]}>
+                                    <Text style={{color: '#FFFFFF', fontWeight: 'bold'}}>{restaurant.rating} ★</Text>
+                                </View>
+                                {restaurant.offer && <View style={styles.offerBadge}><Text style={{color: '#FFF', fontWeight: 'bold', fontSize: 12}}>🎉 {restaurant.offer}</Text></View>}
                             </View>
-                            {restaurant.offer && <View style={styles.offerBadge}><Text style={{color: '#FFF', fontWeight: 'bold', fontSize: 12}}>🎉 {restaurant.offer}</Text></View>}
                         </View>
 
                         <View style={{padding: 16}}>
@@ -465,20 +481,31 @@ export const RestaurantDetailsScreen = ({ navigation, route }) => {
 
                         <Divider style={{marginHorizontal: 16}}/>
                         
+                        <View style={{paddingHorizontal: 16, paddingTop: 16}}>
+                            <Searchbar
+                                placeholder="Search in menu..."
+                                value={menuSearchQuery}
+                                onChangeText={setMenuSearchQuery}
+                                style={{ elevation: 0, backgroundColor: theme.colors.surfaceVariant, borderRadius: 12 }}
+                            />
+                        </View>
+
                         <View style={{padding: 16}}>
-                            <FlatList
-                                horizontal
-                                data={menuFilters}
+                            <ScrollView 
+                                horizontal 
                                 showsHorizontalScrollIndicator={false}
-                                renderItem={({item}) => (
+                                contentContainerStyle={{gap: 8}}
+                            >
+                                {menuFilters.map((item) => (
                                      <TouchableOpacity 
+                                        key={item}
                                         style={[styles.pillButton, {backgroundColor: theme.dark ? theme.colors.surface : 'rgba(0,0,0,0.05)'}, activeFilter === item ? {backgroundColor: theme.colors.primary} : {}]} 
                                         onPress={() => {triggerHaptic(); setActiveFilter(item);}}
                                      >
                                         <Text style={{color: activeFilter === item ? "#FFFFFF" : theme.colors.onSurface}}>{item.charAt(0).toUpperCase() + item.slice(1)}</Text>
                                     </TouchableOpacity>
-                                )}
-                            />
+                                ))}
+                            </ScrollView>
                         </View>
                         <Text variant="titleLarge" style={{fontWeight: 'bold', color: theme.colors.onSurface, marginLeft: 16, marginBottom: 8}}>Menu</Text>
                     </>
@@ -540,7 +567,7 @@ export const CartScreen = ({ navigation }) => {
             <FlatList
                 data={cartSections}
                 keyExtractor={(item) => item.title}
-                ListHeaderComponent={() => <Text variant="headlineMedium" style={{marginHorizontal: 16, marginTop: 16, marginBottom: 24, fontWeight: 'bold', color: theme.colors.onSurface}}>Your Order</Text>}
+                ListHeaderComponent={() => cart.length > 0 ? <Text variant="headlineMedium" style={{marginHorizontal: 16, marginTop: 16, marginBottom: 24, fontWeight: 'bold', color: theme.colors.onSurface}}>Your Order</Text> : null}
                 renderItem={({item}) => {
                     const restaurantData = ALL_RESTAURANTS.find(r => r.name === item.title);
                     return (

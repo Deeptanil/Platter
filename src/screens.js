@@ -268,7 +268,7 @@ const FILTER_ITEMS = [
     { key: 'delivery', label: 'Fastest Delivery', type: 'sort', icon: 'clock-fast' },
     { key: 'distance', label: 'Nearest to me', type: 'sort', icon: 'map-marker' },
     { key: 'gourmet', label: 'Gourmet', type: 'filter', icon: 'silverware-fork-knife' },
-    { key: 'new', label: 'New to you', type: 'filter', icon: 'sparkles' },
+    { key: 'new', label: 'New to you', type: 'filter', icon: 'creation' },
 ];
 
 const HomeScreenHeader = ({ navigation, theme, isVegOnly, setIsVegOnly, selectedCategory, setSelectedCategory, netInfo, sortOption, setSortOption, activeChip, setActiveChip, filterMode }) => {
@@ -1725,7 +1725,7 @@ export const CartScreen = ({ navigation }) => {
                         <View style={cartStyles.summaryRow}>
                             <View style={{ flex: 1 }}>
                                 <RNText style={[cartStyles.summaryLabel, { color: theme.colors.onSurface }]}>
-                                    Delivery partner fee {restaurantDistanceStr !== '0 m' ? `for ${restaurantDistanceStr}` : ''}
+                                    Delivery partner fee {activeAddressDistanceStr !== '0 m' ? `for ${activeAddressDistanceStr}` : ''}
                                 </RNText>
                                 <RNText style={cartStyles.summarySubLabel}>Goes to them for their time and effort</RNText>
                             </View>

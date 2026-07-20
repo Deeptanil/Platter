@@ -1,8 +1,8 @@
 {
   "expo": {
-    "name": "eatopia-v0_5_x",
+    "name": "Eatopia",
     "slug": "snack-b1b1def7-4438-4fdf-baa4-d1ccbe0cf0ec",
-    "version": "1.0.0",
+    "version": "0.6.0",
     "orientation": "portrait",
     "icon": "./assets/icon.png",
     "userInterfaceStyle": "light",
@@ -24,6 +24,17 @@
     },
     "web": {
       "favicon": "./assets/favicon.png"
+    },
+    "extra": {
+      "eas": {
+        "projectId": "a0865fed-4615-4dd4-b76f-76d0891de332"
+      }
+    },
+    "runtimeVersion": {
+      "policy": "appVersion"
+    },
+    "updates": {
+      "url": "https://u.expo.dev/a0865fed-4615-4dd4-b76f-76d0891de332"
     }
   }
 }

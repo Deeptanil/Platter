@@ -101,6 +101,19 @@ const ThemeContext = createContext();
 
 export const ThemeProvider = ({ children }) => {
     const [themeMode, setThemeMode] = useState('light');
+    const [themeLoaded, setThemeLoaded] = useState(false);
+
+    useEffect(() => {
+        AsyncStorage.getItem('themeMode').then(stored => {
+            if (stored === 'dark' || stored === 'light') setThemeMode(stored);
+            setThemeLoaded(true);
+        });
+    }, []);
+
+    useEffect(() => {
+        if (themeLoaded) AsyncStorage.setItem('themeMode', themeMode);
+    }, [themeMode, themeLoaded]);
+
     const theme = themeMode === 'dark' ? AppDarkTheme : AppLightTheme;
     return <ThemeContext.Provider value={{ themeMode, setThemeMode, theme }}>{children}</ThemeContext.Provider>;
 };
@@ -327,6 +340,20 @@ export const useCart = () => useContext(CartContext);
 const SettingsContext = createContext();
 export const SettingsProvider = ({children}) => {
     const [isVegOnly, setIsVegOnly] = useState(false);
-    return <SettingsContext.Provider value={{isVegOnly, setIsVegOnly}}>{children}</SettingsContext.Provider>
+    const [vegLoaded, setVegLoaded] = useState(false);
+
+    useEffect(() => {
+        AsyncStorage.getItem('isVegOnly').then(stored => {
+            if (stored === 'true') setIsVegOnly(true);
+            setVegLoaded(true);
+        });
+    }, []);
+
+    const setIsVegOnlyPersisted = (val) => {
+        setIsVegOnly(val);
+        AsyncStorage.setItem('isVegOnly', val ? 'true' : 'false');
+    };
+
+    return <SettingsContext.Provider value={{isVegOnly, setIsVegOnly: setIsVegOnlyPersisted}}>{children}</SettingsContext.Provider>
 }
 export const useSettings = () => useContext(SettingsContext);

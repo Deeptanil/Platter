@@ -1,5 +1,5 @@
 import React, { useState, useMemo, useRef, useCallback, useEffect } from 'react';
-import { View, ScrollView, TouchableOpacity, FlatList, Image, Pressable, StyleSheet, KeyboardAvoidingView, Platform, Dimensions, Modal, SafeAreaView, Alert, TouchableWithoutFeedback, Keyboard } from 'react-native';
+import { View, ScrollView, TouchableOpacity, FlatList, Image, Pressable, StyleSheet, KeyboardAvoidingView, Platform, Dimensions, Modal, SafeAreaView, Alert, TouchableWithoutFeedback, Keyboard, Animated as RNAnimated } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { BlurView } from 'expo-blur';
 import { Text, Searchbar, Switch, Avatar, List, Divider, Button, Checkbox, Card, IconButton, RadioButton, SegmentedButtons, Menu, Chip, TextInput } from 'react-native-paper';
@@ -165,6 +165,64 @@ export const AuthScreen = ({ navigation }) => {
     );
 };
 
+const { width: SCREEN_WIDTH } = Dimensions.get('window');
+
+const BANNERS = [
+    { id: 'b1', title: 'MEALS UNDER', highlight: '\u20b9250', subtitle: 'Order from the best value spots', color: '#1a3a4a', accent: '#00c853' },
+    { id: 'b2', title: 'FREE DELIVERY', highlight: 'Above \u20b9299', subtitle: 'On every order, every time', color: '#2d1b4e', accent: '#9D7BFF' },
+    { id: 'b3', title: 'LATE NIGHT', highlight: 'SPECIALS', subtitle: 'Open past midnight for you', color: '#3a1a00', accent: '#FF6D00' },
+];
+
+const HomeBannerCarousel = ({ theme }) => {
+    const [activeIndex, setActiveIndex] = useState(0);
+    const scrollRef = useRef(null);
+
+    useEffect(() => {
+        const interval = setInterval(() => {
+            setActiveIndex(prev => {
+                const next = (prev + 1) % BANNERS.length;
+                scrollRef.current?.scrollTo({ x: next * SCREEN_WIDTH, animated: true });
+                return next;
+            });
+        }, 3500);
+        return () => clearInterval(interval);
+    }, []);
+
+    return (
+        <View style={{ marginBottom: 8 }}>
+            <ScrollView
+                ref={scrollRef}
+                horizontal
+                pagingEnabled
+                showsHorizontalScrollIndicator={false}
+                onMomentumScrollEnd={e => setActiveIndex(Math.round(e.nativeEvent.contentOffset.x / SCREEN_WIDTH))}
+            >
+                {BANNERS.map(b => (
+                    <View key={b.id} style={[homeStyles.bannerSlide, { backgroundColor: b.color }]}>
+                        <View style={homeStyles.bannerTextBlock}>
+                            <Text style={[homeStyles.bannerTitle, { color: '#FFFFFF88' }]}>{b.title}</Text>
+                            <Text style={[homeStyles.bannerHighlight, { color: b.accent }]}>{b.highlight}</Text>
+                            <Text style={[homeStyles.bannerSub, { color: '#FFFFFF99' }]}>{b.subtitle}</Text>
+                            <TouchableOpacity style={[homeStyles.bannerBtn, { borderColor: b.accent }]}>
+                                <Text style={[homeStyles.bannerBtnText, { color: b.accent }]}>Explore</Text>
+                                <MaterialCommunityIcons name="chevron-right" size={14} color={b.accent} />
+                            </TouchableOpacity>
+                        </View>
+                        <View style={[homeStyles.bannerIconCircle, { backgroundColor: b.accent + '22' }]}>
+                            <MaterialCommunityIcons name="silverware-fork-knife" size={48} color={b.accent} />
+                        </View>
+                    </View>
+                ))}
+            </ScrollView>
+            <View style={homeStyles.dotsRow}>
+                {BANNERS.map((_, i) => (
+                    <View key={i} style={[homeStyles.dot, { backgroundColor: i === activeIndex ? theme.colors.primary : (theme.dark ? 'rgba(255,255,255,0.3)' : 'rgba(0,0,0,0.2)') }]} />
+                ))}
+            </View>
+        </View>
+    );
+};
+
 const SORT_OPTIONS = [
     { key: 'default', label: 'Default', icon: 'star' },
     { key: 'rating', label: 'Top Rated', icon: 'star-circle' },
@@ -172,122 +230,146 @@ const SORT_OPTIONS = [
     { key: 'distance', label: 'Nearest First', icon: 'map-marker' },
 ];
 
-const HomeScreenHeader = ({ navigation, theme, isVegOnly, setIsVegOnly, selectedCategory, setSelectedCategory, selectedMood, setSelectedMood, netInfo, sortOption, setSortOption }) => {
+const FILTER_CHIPS = ['Gourmet', 'No packaging charges', 'New to you', 'Fastest delivery'];
+
+const HomeScreenHeader = ({ navigation, theme, isVegOnly, setIsVegOnly, selectedCategory, setSelectedCategory, netInfo, sortOption, setSortOption }) => {
     const { user, selectedAddress } = useUser();
     const userInitial = user?.name ? user.name.charAt(0).toUpperCase() : 'G';
-
-    const glassStyle = theme.dark ? { backgroundColor: 'rgba(255, 255, 255, 0.1)', borderColor: 'rgba(255, 255, 255, 0.3)', borderWidth: 1 } : { backgroundColor: 'rgba(255, 255, 255, 0.6)', borderColor: 'rgba(255, 255, 255, 0.7)', borderWidth: 1 };
-    const bannerGlassStyle = theme.dark ? { backgroundColor: 'rgba(255, 255, 255, 0.08)', borderColor: 'rgba(255, 255, 255, 0.2)', borderWidth: 1 } : { backgroundColor: 'rgba(255, 255, 255, 0.7)', borderColor: 'rgba(255, 255, 255, 0.8)', borderWidth: 1 };
+    const [activeChip, setActiveChip] = useState(null);
 
     return (
         <>
-            <View style={[styles.header]}>
-                <TouchableOpacity onPress={() => navigation.navigate('MyAddresses')} style={{flex: 1}}>
-                    <Text variant="titleMedium" style={{ color: theme.colors.onSurface }}>Deliver to</Text>
-                    <View style={{flexDirection: 'row', alignItems: 'center'}}>
-                         <Text variant="bodyLarge" style={{ color: theme.colors.primary, fontWeight: 'bold' }} numberOfLines={1}>{selectedAddress?.type} - {selectedAddress?.line1}</Text>
-                         <MaterialCommunityIcons name="chevron-down" size={20} color={theme.colors.primary} />
+            {/* Top bar */}
+            <View style={homeStyles.topBar}>
+                <TouchableOpacity onPress={() => navigation.navigate('MyAddresses')} style={{ flex: 1 }}>
+                    <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+                        <MaterialCommunityIcons name="home-outline" size={18} color={theme.colors.primary} style={{ marginRight: 4 }} />
+                        <Text style={[homeStyles.topBarLocation, { color: theme.colors.onSurface }]}>Home</Text>
+                        <MaterialCommunityIcons name="chevron-down" size={18} color={theme.colors.onSurface} />
                     </View>
+                    <Text style={[homeStyles.topBarAddress, { color: theme.colors.onSurfaceVariant }]} numberOfLines={1}>
+                        {selectedAddress?.line1 || 'Mumbai, Maharashtra'}
+                    </Text>
                 </TouchableOpacity>
-                <Pressable onPress={() => navigation.navigate('Settings')} style={{marginLeft: 16}}>
-                     <Avatar.Text 
-                        size={40} 
-                        label={userInitial} 
+                <Pressable onPress={() => navigation.navigate('Settings')} style={{ marginLeft: 16 }}>
+                    <Avatar.Text
+                        size={38}
+                        label={userInitial}
                         style={{ backgroundColor: theme.colors.primary }}
-                        color={theme.dark ? theme.colors.background : "#FFFFFF"}
+                        color="#FFFFFF"
                     />
                 </Pressable>
             </View>
 
-            <View style={styles.searchContainer}>
-                <Pressable onPress={() => navigation.navigate('Search')} style={{flex: 1}}>
-                    <View style={[styles.searchBar, glassStyle, {flexDirection: 'row', alignItems: 'center', paddingHorizontal: 16, paddingVertical: 18}]} pointerEvents="none">
-                        <MaterialCommunityIcons name="magnify" size={24} color={theme.colors.onSurfaceVariant} />
-                        <Text style={{marginLeft: 8, color: theme.colors.onSurfaceVariant}}>Search restaurants or dishes</Text>
+            {/* Search bar + VEG toggle */}
+            <View style={homeStyles.searchRow}>
+                <Pressable onPress={() => navigation.navigate('Search')} style={homeStyles.searchBox}>
+                    <View style={[homeStyles.searchInner, { backgroundColor: theme.dark ? 'rgba(255,255,255,0.08)' : 'rgba(0,0,0,0.06)', borderColor: theme.dark ? 'rgba(255,255,255,0.1)' : 'rgba(0,0,0,0.1)' }]}>
+                        <MaterialCommunityIcons name="magnify" size={22} color={theme.colors.onSurfaceVariant} />
+                        <Text style={[homeStyles.searchPlaceholder, { color: theme.colors.onSurfaceVariant }]}>Search restaurants or dishes</Text>
                     </View>
                 </Pressable>
-                <View style={styles.vegToggleContainer}>
-                    <Text style={{ color: theme.colors.onSurfaceVariant }}>Veg</Text>
-                    <Switch value={isVegOnly} onValueChange={setIsVegOnly} color={theme.colors.primary} />
+                <View style={[homeStyles.vegBadge, { backgroundColor: theme.dark ? '#1a3a1a' : '#e8f5e9', borderColor: isVegOnly ? '#4CAF50' : 'transparent', borderWidth: 1 }]}>
+                    <Text style={[homeStyles.vegLabel, { color: '#4CAF50' }]}>VEG</Text>
+                    <Switch value={isVegOnly} onValueChange={setIsVegOnly} color="#4CAF50" style={{ transform: [{ scaleX: 0.75 }, { scaleY: 0.75 }] }} />
                 </View>
             </View>
-            
-            <View style={[styles.banner, bannerGlassStyle]}>
-                <MaterialCommunityIcons name="motorbike" color={theme.colors.primary} size={24}/>
-                <Text style={{color: theme.colors.onSurface, marginLeft: 10, fontWeight: 'bold'}}>Free Delivery on orders over ₹299 — only on Platter!</Text>
-            </View>
 
+            {/* Offline banner */}
             {netInfo?.isInternetReachable === false && (
-                <View style={[styles.networkBanner, { backgroundColor: theme.colors.surfaceVariant }]}>
-                    <MaterialCommunityIcons name="wifi-off" color={theme.colors.onSurfaceVariant} size={20}/>
-                    <Text style={{color: theme.colors.onSurfaceVariant, marginLeft: 10, fontWeight: '500'}}>You are offline. Content may be outdated.</Text>
+                <View style={[homeStyles.offlineBanner, { backgroundColor: theme.colors.surfaceVariant }]}>
+                    <MaterialCommunityIcons name="wifi-off" color={theme.colors.onSurfaceVariant} size={18} />
+                    <Text style={{ color: theme.colors.onSurfaceVariant, marginLeft: 8, fontSize: 13 }}>You are offline. Content may be outdated.</Text>
                 </View>
             )}
-            
-            <Text variant="titleLarge" style={{ fontWeight: 'bold', color: theme.colors.onSurface, marginHorizontal: 16, marginBottom: 12 }}>Categories</Text>
-            <ScrollView 
-                horizontal 
-                showsHorizontalScrollIndicator={false} 
-                contentContainerStyle={{paddingLeft: 16}}
-            >
-                {CATEGORIES.map((item) => (
-                    <TouchableOpacity key={item.name} style={styles.categoryItem} onPress={() => setSelectedCategory(item.name)}>
-                        <Image source={{ uri: item.image }} style={[styles.categoryImage, selectedCategory === item.name && {borderColor: theme.colors.primary, borderWidth: 2}]} />
-                        <Text style={{ color: theme.colors.onSurfaceVariant, fontSize: 12 }}>{item.name}</Text>
+
+            {/* Hero Banner Carousel */}
+            <HomeBannerCarousel theme={theme} />
+
+            {/* Category scroller */}
+            <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={homeStyles.categoryScroll}>
+                {CATEGORIES.map(item => (
+                    <TouchableOpacity key={item.name} style={homeStyles.categoryItem} onPress={() => setSelectedCategory(item.name)}>
+                        <View style={[homeStyles.categoryImageWrap, selectedCategory === item.name && { borderColor: theme.colors.primary, borderWidth: 2 }]}>
+                            <Image source={{ uri: item.image }} style={homeStyles.categoryImage} />
+                        </View>
+                        <Text style={[homeStyles.categoryLabel, { color: selectedCategory === item.name ? theme.colors.primary : theme.colors.onSurfaceVariant }]}>{item.name}</Text>
                     </TouchableOpacity>
                 ))}
             </ScrollView>
 
-            <Text variant="titleLarge" style={{ fontWeight: 'bold', color: theme.colors.onSurface, marginHorizontal: 16, marginBottom: 12, marginTop: 24 }}>What's Your Mood?</Text>
-            <ScrollView 
-                horizontal 
-                showsHorizontalScrollIndicator={false} 
-                contentContainerStyle={{paddingLeft: 16}}
-            >
-                {MOODS.map((item) => (
-                    <TouchableOpacity 
-                        key={item.key}
-                        style={[styles.moodItem, {backgroundColor: theme.colors.surfaceVariant}, selectedMood === item.key && {backgroundColor: theme.colors.primary}]} 
-                        onPress={() => setSelectedMood(prev => prev === item.key ? null : item.key)}>
-                        <MaterialCommunityIcons name={item.icon} size={24} color={selectedMood === item.key ? (theme.dark ? theme.colors.background : '#FFFFFF') : theme.colors.primary} />
-                        <Text style={{ color: selectedMood === item.key ? (theme.dark ? theme.colors.background : '#FFFFFF') : theme.colors.onSurface, marginTop: 8, textAlign: 'center' }}>{item.name}</Text>
+            {/* Filter chips */}
+            <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={homeStyles.chipsRow}>
+                <TouchableOpacity style={[homeStyles.filterChip, { backgroundColor: theme.dark ? 'rgba(255,255,255,0.1)' : 'rgba(0,0,0,0.07)' }]}>
+                    <MaterialCommunityIcons name="tune-variant" size={14} color={theme.colors.onSurface} style={{ marginRight: 4 }} />
+                    <Text style={[homeStyles.chipLabel, { color: theme.colors.onSurface }]}>Filters</Text>
+                </TouchableOpacity>
+                {FILTER_CHIPS.map(chip => (
+                    <TouchableOpacity
+                        key={chip}
+                        style={[homeStyles.filterChip, { backgroundColor: activeChip === chip ? theme.colors.primary : (theme.dark ? 'rgba(255,255,255,0.1)' : 'rgba(0,0,0,0.07)') }]}
+                        onPress={() => setActiveChip(prev => prev === chip ? null : chip)}
+                    >
+                        <Text style={[homeStyles.chipLabel, { color: activeChip === chip ? '#FFF' : theme.colors.onSurface }]}>{chip}</Text>
                     </TouchableOpacity>
                 ))}
             </ScrollView>
 
-            <Text variant="titleLarge" style={{ fontWeight: 'bold', color: theme.colors.onSurface, marginHorizontal: 16, marginBottom: 12, marginTop: 24 }}>Recommended for You</Text>
-            <ScrollView 
-                horizontal 
-                showsHorizontalScrollIndicator={false} 
-                contentContainerStyle={{paddingLeft: 16, gap: 12}}
-            >
-                {ALL_RESTAURANTS.slice(0, 6).map((item) => (
-                    <RecommendedCard key={item.id} restaurant={item} theme={theme} navigation={navigation} />
-                ))}
-            </ScrollView>
-
-            <View style={{ marginHorizontal: 16, marginTop: 24, marginBottom: 8 }}>
-                <Text variant="titleLarge" style={{ fontWeight: 'bold', color: theme.colors.onSurface }}>{selectedCategory === 'All' ? 'All Restaurants' : `Serving ${selectedCategory}`}</Text>
-            </View>
-            <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ paddingHorizontal: 16, paddingBottom: 16, gap: 8 }}>
+            {/* Sort options */}
+            <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ paddingHorizontal: 16, paddingBottom: 8, gap: 8 }}>
                 {SORT_OPTIONS.map(opt => (
                     <TouchableOpacity
                         key={opt.key}
                         onPress={() => setSortOption(opt.key)}
-                        style={[styles.sortChip, { backgroundColor: sortOption === opt.key ? theme.colors.primary : theme.colors.surfaceVariant }]}>
-                        <MaterialCommunityIcons name={opt.icon} size={14} color={sortOption === opt.key ? '#FFF' : theme.colors.onSurfaceVariant} style={{ marginRight: 4 }} />
+                        style={[homeStyles.sortChip, { backgroundColor: sortOption === opt.key ? theme.colors.primary : theme.colors.surfaceVariant }]}>
+                        <MaterialCommunityIcons name={opt.icon} size={13} color={sortOption === opt.key ? '#FFF' : theme.colors.onSurfaceVariant} style={{ marginRight: 4 }} />
                         <Text style={{ fontSize: 12, color: sortOption === opt.key ? '#FFF' : theme.colors.onSurface }}>{opt.label}</Text>
                     </TouchableOpacity>
                 ))}
             </ScrollView>
+
+            {/* Recommended section header */}
+            <Text style={[homeStyles.sectionTitle, { color: theme.colors.onSurface }]}>RECOMMENDED FOR YOU</Text>
+
+            {/* 3-column recommended grid */}
+            <View style={homeStyles.recommendedGrid}>
+                {ALL_RESTAURANTS.slice(0, 6).map(item => (
+                    <TouchableOpacity
+                        key={item.id}
+                        style={homeStyles.recommendedCell}
+                        onPress={() => { triggerHaptic(); navigation.navigate('RestaurantDetails', { restaurant: item }); }}
+                    >
+                        <View style={homeStyles.recommendedImageWrap}>
+                            <Image source={{ uri: item.image }} style={homeStyles.recommendedImage} resizeMode="cover" />
+                            {item.offer && (
+                                <View style={homeStyles.recommendedOfferTag}>
+                                    <Text style={homeStyles.recommendedOfferText} numberOfLines={1}>{item.offer}</Text>
+                                </View>
+                            )}
+                            <View style={homeStyles.recommendedRating}>
+                                <MaterialCommunityIcons name="star" size={11} color="#FFD700" />
+                                <Text style={homeStyles.recommendedRatingText}>{item.rating}</Text>
+                            </View>
+                        </View>
+                        <Text style={[homeStyles.recommendedName, { color: theme.colors.onSurface }]} numberOfLines={1}>{item.name}</Text>
+                        <View style={{ flexDirection: 'row', alignItems: 'center', marginTop: 2 }}>
+                            <MaterialCommunityIcons name="clock-outline" size={11} color={theme.colors.onSurfaceVariant} />
+                            <Text style={[homeStyles.recommendedMeta, { color: theme.colors.onSurfaceVariant }]}>{item.deliveryTime} mins</Text>
+                        </View>
+                    </TouchableOpacity>
+                ))}
+            </View>
+
+            <Text style={[homeStyles.sectionTitle, { color: theme.colors.onSurface, marginTop: 8 }]}>ALL RESTAURANTS</Text>
         </>
     );
 };
-export const HomeScreen = ({ navigation }) => {
+
+export const HomeScreen = ({ navigation, route }) => {
+    const filterMode = route?.params?.filterMode || 'all';
     const { theme } = useAppTheme();
     const { isVegOnly, setIsVegOnly } = useSettings();
     const [selectedCategory, setSelectedCategory] = useState('All');
-    const [selectedMood, setSelectedMood] = useState(null);
     const [sortOption, setSortOption] = useState('default');
     const insets = useSafeAreaInsets();
     const netInfo = useNetInfo();
@@ -295,37 +377,40 @@ export const HomeScreen = ({ navigation }) => {
     const filteredRestaurants = useMemo(() => {
         let restaurants = ALL_RESTAURANTS;
 
+        if (filterMode === 'under250') {
+            restaurants = restaurants.filter(res => res.menu.some(item => item.price <= 250));
+        } else if (filterMode === 'healthy') {
+            restaurants = restaurants.filter(res => res.moods && res.moods.includes('healthy'));
+        }
+
         if (isVegOnly) {
             restaurants = restaurants.filter(res => res.isVeg);
         }
 
         restaurants = restaurants.filter(res => {
-            const matchesCategory = selectedCategory === 'All' || res.tags.some(tag => tag.toLowerCase().includes(selectedCategory.toLowerCase()));
-            const matchesMood = !selectedMood || (res.moods && res.moods.includes(selectedMood));
-            return matchesCategory && matchesMood;
+            return selectedCategory === 'All' || res.tags.some(tag => tag.toLowerCase().includes(selectedCategory.toLowerCase()));
         });
 
         if (sortOption === 'rating') restaurants = [...restaurants].sort((a, b) => b.rating - a.rating);
         else if (sortOption === 'delivery') restaurants = [...restaurants].sort((a, b) => a.deliveryTime - b.deliveryTime);
         else if (sortOption === 'distance') {
-            const parseDist = (str) => {
-                const val = parseFloat(str);
-                return isNaN(val) ? 999 : val;
-            };
+            const parseDist = (str) => { const val = parseFloat(str); return isNaN(val) ? 999 : val; };
             restaurants = [...restaurants].sort((a, b) => parseDist(a.distance) - parseDist(b.distance));
         }
-        
+
         return restaurants;
-    }, [isVegOnly, selectedCategory, selectedMood, sortOption]);
-    
+    }, [isVegOnly, selectedCategory, sortOption, filterMode]);
+
     const renderRestaurantCard = useCallback(({ item, index }) => (
-        <BigRestaurantCard 
-            restaurant={item} 
-            theme={theme} 
-            navigation={navigation} 
-            index={index} 
+        <BigRestaurantCard
+            restaurant={item}
+            theme={theme}
+            navigation={navigation}
+            index={index}
         />
     ), [theme, navigation]);
+
+    const showHeader = filterMode === 'all';
 
     return (
         <AppBackground>
@@ -334,24 +419,33 @@ export const HomeScreen = ({ navigation }) => {
                 keyExtractor={(item) => item.id}
                 renderItem={renderRestaurantCard}
                 ListHeaderComponent={
-                    <HomeScreenHeader 
-                        navigation={navigation}
-                        theme={theme}
-                        isVegOnly={isVegOnly}
-                        setIsVegOnly={setIsVegOnly}
-                        selectedCategory={selectedCategory}
-                        setSelectedCategory={setSelectedCategory}
-                        selectedMood={selectedMood}
-                        setSelectedMood={setSelectedMood}
-                        netInfo={netInfo}
-                        sortOption={sortOption}
-                        setSortOption={setSortOption}
-                    />
+                    showHeader ? (
+                        <HomeScreenHeader
+                            navigation={navigation}
+                            theme={theme}
+                            isVegOnly={isVegOnly}
+                            setIsVegOnly={setIsVegOnly}
+                            selectedCategory={selectedCategory}
+                            setSelectedCategory={setSelectedCategory}
+                            netInfo={netInfo}
+                            sortOption={sortOption}
+                            setSortOption={setSortOption}
+                        />
+                    ) : (
+                        <View style={{ paddingTop: insets.top + 8, paddingHorizontal: 16, paddingBottom: 12 }}>
+                            <Text style={{ fontSize: 22, fontWeight: 'bold', color: theme.colors.onSurface }}>
+                                {filterMode === 'under250' ? 'Under \u20b9250' : 'Healthy Mode'}
+                            </Text>
+                            <Text style={{ color: theme.colors.onSurfaceVariant, marginTop: 4 }}>
+                                {filterMode === 'under250' ? 'Budget-friendly options for you' : 'Good food for your wellbeing'}
+                            </Text>
+                        </View>
+                    )
                 }
-                ListEmptyComponent={<View style={{alignItems: 'center', marginTop: 50}}><Text style={{color: theme.colors.onSurface}}>No restaurants found. Try changing your filters!</Text></View>}
-                contentContainerStyle={{ paddingTop: insets.top, paddingBottom: 80 }}
+                ListEmptyComponent={<View style={{ alignItems: 'center', marginTop: 60, paddingHorizontal: 32 }}><MaterialCommunityIcons name="silverware-fork-knife" size={64} color={theme.colors.onSurfaceVariant} /><Text style={{ color: theme.colors.onSurface, marginTop: 12, textAlign: 'center' }}>No restaurants found.</Text></View>}
+                contentContainerStyle={{ paddingTop: showHeader ? insets.top : 0, paddingBottom: 100 }}
             />
-            <CartFAB navigation={navigation}/>
+            <CartFAB navigation={navigation} />
         </AppBackground>
     );
 };
@@ -363,42 +457,85 @@ const MenuItemCard = ({ item, restaurant }) => {
     const quantity = cartItem ? cartItem.quantity : 0;
 
     const QuantityButton = () => (
-        <View style={[styles.quantityContainer, {backgroundColor: theme.colors.primary}]}>
-            <IconButton icon="minus" onPress={() => { triggerHaptic(); removeFromCart(item); }} iconColor={"#FFFFFF"} size={20} style={{margin: 0, height: 36, width: 36}}/>
-            <Text style={{color: "#FFFFFF", fontWeight: 'bold', fontSize: 18}}>{quantity}</Text>
-            <IconButton icon="plus" onPress={() => { triggerHaptic(); addToCart({...item, restaurantName: restaurant.name}); }} iconColor={"#FFFFFF"} size={20} style={{margin: 0, height: 36, width: 36}}/>
+        <View style={[rdStyles.qtyBox, { backgroundColor: theme.colors.primary }]}>
+            <TouchableOpacity onPress={() => { triggerHaptic(); removeFromCart(item); }} style={rdStyles.qtyBtn}>
+                <MaterialCommunityIcons name="minus" size={16} color="#FFF" />
+            </TouchableOpacity>
+            <Text style={rdStyles.qtyText}>{quantity}</Text>
+            <TouchableOpacity onPress={() => { triggerHaptic(); addToCart({ ...item, restaurantName: restaurant.name }); }} style={rdStyles.qtyBtn}>
+                <MaterialCommunityIcons name="plus" size={16} color="#FFF" />
+            </TouchableOpacity>
         </View>
     );
 
     const AddButton = () => (
-        <TouchableOpacity 
-            style={[styles.addButton, {backgroundColor: theme.colors.primary}]} 
-            onPress={() => { triggerHaptic(); addToCart({...item, restaurantName: restaurant.name}); }}>
-            <Text style={{color: '#FFFFFF', fontWeight: 'bold'}}>ADD</Text>
+        <TouchableOpacity
+            style={[rdStyles.addBtn, { backgroundColor: theme.colors.primary }]}
+            onPress={() => { triggerHaptic(); addToCart({ ...item, restaurantName: restaurant.name }); }}
+        >
+            <MaterialCommunityIcons name="plus" size={16} color="#FFF" />
+            <Text style={rdStyles.addBtnText}>ADD</Text>
         </TouchableOpacity>
     );
 
     return (
-        <View style={[styles.menuItemContainer, {backgroundColor: theme.colors.surface, borderColor: theme.colors.surfaceVariant}]}>
-            <View style={{flex: 1, paddingRight: 16}}>
-                <View style={{flexDirection: 'row', alignItems: 'center'}}>
-                     <MaterialCommunityIcons name={item.isVeg ? 'leaf-circle' : 'food-variant'} color={item.isVeg ? 'green' : 'red'} size={20} style={{marginRight: 8}}/>
-                    <Text variant="titleMedium" style={{flex: 1, color: theme.colors.onSurface}}>{item.name}</Text>
+        <View style={[rdStyles.menuItem, { borderBottomColor: theme.dark ? 'rgba(255,255,255,0.08)' : 'rgba(0,0,0,0.08)' }]}>
+            {/* Left content */}
+            <View style={{ flex: 1, paddingRight: 12 }}>
+                <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 4 }}>
+                    <MaterialCommunityIcons
+                        name={item.isVeg ? 'square-outline' : 'square-outline'}
+                        size={16}
+                        color={item.isVeg ? '#4CAF50' : '#F44336'}
+                        style={{ marginRight: 6 }}
+                    />
+                    <MaterialCommunityIcons
+                        name={item.isVeg ? 'circle' : 'circle'}
+                        size={8}
+                        color={item.isVeg ? '#4CAF50' : '#F44336'}
+                        style={{ position: 'absolute', left: 4 }}
+                    />
+                    {item.isHighlyOrdered && (
+                        <View style={rdStyles.highlyOrderedBadge}>
+                            <MaterialCommunityIcons name="trending-up" size={11} color="#FF6D00" />
+                            <Text style={rdStyles.highlyOrderedText}>Highly reordered</Text>
+                        </View>
+                    )}
                 </View>
-                <Text variant="bodyMedium" style={{color: theme.colors.onSurfaceVariant, marginTop: 4}}>₹{item.price}</Text>
+                <Text style={[rdStyles.menuItemName, { color: theme.colors.onSurface }]}>{item.name}</Text>
+                <Text style={[rdStyles.menuItemPrice, { color: theme.colors.onSurface }]}>\u20b9{item.price}</Text>
+                {item.isSpicy && (
+                    <View style={{ flexDirection: 'row', alignItems: 'center', marginTop: 4 }}>
+                        <MaterialCommunityIcons name="chili-mild" size={13} color="#FF5722" />
+                        <Text style={{ fontSize: 11, color: '#FF5722', marginLeft: 3 }}>Spicy</Text>
+                    </View>
+                )}
             </View>
-            <View style={{width: 110}}>
-                {quantity > 0 ? <QuantityButton/> : <AddButton/>}
+
+            {/* Right: image + ADD button */}
+            <View style={rdStyles.menuItemRight}>
+                <Image
+                    source={{ uri: restaurant.image }}
+                    style={rdStyles.menuItemImage}
+                    resizeMode="cover"
+                />
+                <View style={rdStyles.menuItemAction}>
+                    {quantity > 0 ? <QuantityButton /> : <AddButton />}
+                </View>
             </View>
         </View>
     );
-}
+};
 
 export const RestaurantDetailsScreen = ({ navigation, route }) => {
     const { restaurant } = route.params;
     const { theme } = useAppTheme();
+    const { cart } = useCart();
+    const { pastOrders } = useCart();
     const [activeFilter, setActiveFilter] = useState('all');
     const [menuSearchQuery, setMenuSearchQuery] = useState('');
+    const [showOffers, setShowOffers] = useState(false);
+    const insets = useSafeAreaInsets();
 
     const hasNonVeg = restaurant.menu.some(item => !item.isVeg);
 
@@ -410,20 +547,30 @@ export const RestaurantDetailsScreen = ({ navigation, route }) => {
 
     const menuFilters = useMemo(() => {
         const filters = ['all', 'veg'];
-        if (hasNonVeg) {
-            filters.push('non-veg');
-        }
+        if (hasNonVeg) filters.push('non-veg');
         filters.push('spicy', 'highly ordered');
         return filters;
     }, [hasNonVeg]);
 
+    // Past orders for this restaurant
+    const pastOrderItems = useMemo(() => {
+        const items = [];
+        pastOrders.forEach(order => {
+            order.items?.forEach(item => {
+                if (item.restaurantName === restaurant.name && !items.find(i => i.id === item.id)) {
+                    items.push(item);
+                }
+            });
+        });
+        return items.slice(0, 3);
+    }, [pastOrders, restaurant.name]);
 
     const flatFilteredMenu = useMemo(() => {
         let menu = restaurant.menu.map(item => ({
             ...item,
             isHighlyOrdered: restaurant.highlyOrdered?.includes(item.id) || false
         }));
-        
+
         if (menuSearchQuery) {
             menu = menu.filter(item => item.name.toLowerCase().includes(menuSearchQuery.toLowerCase()));
         }
@@ -437,82 +584,147 @@ export const RestaurantDetailsScreen = ({ navigation, route }) => {
                 return true;
             });
         }
-        
+
         return menu;
     }, [menuSearchQuery, activeFilter, restaurant.menu, restaurant.highlyOrdered]);
 
+    const DUMMY_OFFERS = [
+        `Flat \u20b960 OFF above \u20b9299`,
+        `20% OFF on first order`,
+        `Free delivery on orders above \u20b9199`,
+    ];
 
     return (
         <AppBackground>
             <FlatList
                 data={flatFilteredMenu}
                 keyExtractor={(item) => item.id}
-                renderItem={({item}) => <MenuItemCard item={item} restaurant={restaurant} />}
+                renderItem={({ item }) => <MenuItemCard item={item} restaurant={restaurant} />}
                 ListHeaderComponent={() => (
                     <>
-                        {/* Hero Image & Overlay Wrapper */}
-                        <View style={{ position: 'relative' }}>
-                            <Image source={{ uri: restaurant.image }} style={styles.restaurantHeroImage} resizeMode="cover" />
-                            <View style={styles.restaurantHeroOverlay}>
-                                <View style={[styles.ratingBox, {backgroundColor: getRatingColor(restaurant.rating)}]}>
-                                    <Text style={{color: '#FFFFFF', fontWeight: 'bold'}}>{restaurant.rating} ★</Text>
-                                </View>
-                                {restaurant.offer && <View style={styles.offerBadge}><Text style={{color: '#FFF', fontWeight: 'bold', fontSize: 12}}>🎉 {restaurant.offer}</Text></View>}
-                            </View>
-                        </View>
-
-                        <View style={{padding: 16}}>
-                            <Text variant="headlineMedium" style={{fontWeight: 'bold', color: theme.colors.onSurface}}>{restaurant.name}</Text>
-                            <View style={{flexDirection: 'row', alignItems: 'center', marginTop: 6, gap: 16}}>
-                                <View style={{flexDirection: 'row', alignItems: 'center'}}>
-                                    <MaterialCommunityIcons name="clock-outline" size={14} color={theme.colors.onSurfaceVariant}/>
-                                    <Text variant="bodyMedium" style={{color: theme.colors.onSurfaceVariant, marginLeft: 4}}>{restaurant.deliveryTime} min</Text>
-                                </View>
-                                <View style={{flexDirection: 'row', alignItems: 'center'}}>
-                                    <MaterialCommunityIcons name="map-marker-outline" size={14} color={theme.colors.onSurfaceVariant}/>
-                                    <Text variant="bodyMedium" style={{color: theme.colors.onSurfaceVariant, marginLeft: 4}}>{restaurant.distance}</Text>
-                                </View>
-                                <View style={{flexDirection: 'row', alignItems: 'center'}}>
-                                    <MaterialCommunityIcons name="account-group-outline" size={14} color={theme.colors.onSurfaceVariant}/>
-                                    <Text variant="bodyMedium" style={{color: theme.colors.onSurfaceVariant, marginLeft: 4}}>{restaurant.reviews}</Text>
-                                </View>
-                            </View>
-                        </View>
-
-                        <Divider style={{marginHorizontal: 16}}/>
-                        
-                        <View style={{paddingHorizontal: 16, paddingTop: 16}}>
-                            <Searchbar
-                                placeholder="Search in menu..."
-                                value={menuSearchQuery}
-                                onChangeText={setMenuSearchQuery}
-                                style={{ elevation: 0, backgroundColor: theme.colors.surfaceVariant, borderRadius: 12 }}
-                            />
-                        </View>
-
-                        <View style={{padding: 16}}>
-                            <ScrollView 
-                                horizontal 
-                                showsHorizontalScrollIndicator={false}
-                                contentContainerStyle={{gap: 8}}
+                        {/* Hero image with back button */}
+                        <View style={rdStyles.heroWrap}>
+                            <Image source={{ uri: restaurant.image }} style={rdStyles.heroImage} resizeMode="cover" />
+                            <View style={rdStyles.heroGradient} />
+                            <TouchableOpacity
+                                style={[rdStyles.backBtn, { top: insets.top + 8 }]}
+                                onPress={() => navigation.goBack()}
                             >
-                                {menuFilters.map((item) => (
-                                     <TouchableOpacity 
-                                        key={item}
-                                        style={[styles.pillButton, {backgroundColor: theme.dark ? theme.colors.surface : 'rgba(0,0,0,0.05)'}, activeFilter === item ? {backgroundColor: theme.colors.primary} : {}]} 
-                                        onPress={() => {triggerHaptic(); setActiveFilter(item);}}
-                                     >
-                                        <Text style={{color: activeFilter === item ? "#FFFFFF" : theme.colors.onSurface}}>{item.charAt(0).toUpperCase() + item.slice(1)}</Text>
+                                <MaterialCommunityIcons name="arrow-left" size={24} color="#FFF" />
+                            </TouchableOpacity>
+                        </View>
+
+                        {/* Info card */}
+                        <View style={[rdStyles.infoCard, { backgroundColor: theme.colors.surface }]}>
+                            {/* Name + rating */}
+                            <View style={rdStyles.nameRow}>
+                                <Text style={[rdStyles.restaurantName, { color: theme.colors.onSurface }]}>{restaurant.name}</Text>
+                                <View style={[rdStyles.ratingBubble, { backgroundColor: getRatingColor(restaurant.rating) }]}>
+                                    <MaterialCommunityIcons name="star" size={13} color="#FFF" />
+                                    <Text style={rdStyles.ratingText}>{restaurant.rating}</Text>
+                                </View>
+                            </View>
+                            <Text style={[rdStyles.reviewCount, { color: theme.colors.onSurfaceVariant }]}>By {restaurant.reviews}</Text>
+
+                            {/* Tags */}
+                            <Text style={[rdStyles.tagsLine, { color: theme.colors.onSurfaceVariant }]}>{restaurant.tags.join(' • ')}</Text>
+
+                            {/* Location + time row */}
+                            <View style={rdStyles.metaRow}>
+                                <View style={rdStyles.metaItem}>
+                                    <MaterialCommunityIcons name="map-marker-outline" size={15} color={theme.colors.onSurfaceVariant} />
+                                    <Text style={[rdStyles.metaText, { color: theme.colors.onSurfaceVariant }]}>{restaurant.distance}</Text>
+                                </View>
+                                <Text style={{ color: theme.colors.onSurfaceVariant, marginHorizontal: 6 }}>·</Text>
+                                <View style={rdStyles.metaItem}>
+                                    <MaterialCommunityIcons name="clock-outline" size={15} color={theme.colors.onSurfaceVariant} />
+                                    <Text style={[rdStyles.metaText, { color: theme.colors.onSurfaceVariant }]}>{restaurant.deliveryTime}-{restaurant.deliveryTime + 10} mins</Text>
+                                </View>
+                            </View>
+
+                            {/* Eco badge */}
+                            <View style={rdStyles.ecoBadge}>
+                                <MaterialCommunityIcons name="leaf" size={14} color="#4CAF50" />
+                                <Text style={rdStyles.ecoBadgeText}>Low plastic packaging</Text>
+                            </View>
+
+                            {/* Offer strip */}
+                            <TouchableOpacity
+                                style={[rdStyles.offerStrip, { backgroundColor: theme.dark ? 'rgba(255,255,255,0.05)' : '#FFF8E1', borderColor: theme.dark ? 'rgba(255,255,255,0.1)' : '#FFE082' }]}
+                                onPress={() => setShowOffers(v => !v)}
+                            >
+                                <MaterialCommunityIcons name="tag-outline" size={18} color={theme.colors.primary} />
+                                <Text style={[rdStyles.offerStripText, { color: theme.colors.onSurface }]}>
+                                    {restaurant.offer || DUMMY_OFFERS[0]}
+                                </Text>
+                                <View style={rdStyles.offerCount}>
+                                    <Text style={[rdStyles.offerCountText, { color: theme.colors.primary }]}>{DUMMY_OFFERS.length} offers</Text>
+                                    <MaterialCommunityIcons name={showOffers ? 'chevron-up' : 'chevron-down'} size={16} color={theme.colors.primary} />
+                                </View>
+                            </TouchableOpacity>
+
+                            {showOffers && (
+                                <View style={[rdStyles.offerList, { backgroundColor: theme.dark ? 'rgba(255,255,255,0.03)' : '#FFFDE7' }]}>
+                                    {DUMMY_OFFERS.map((offer, i) => (
+                                        <View key={i} style={rdStyles.offerListItem}>
+                                            <MaterialCommunityIcons name="ticket-percent-outline" size={16} color={theme.colors.primary} />
+                                            <Text style={[rdStyles.offerListText, { color: theme.colors.onSurface }]}>{offer}</Text>
+                                        </View>
+                                    ))}
+                                </View>
+                            )}
+                        </View>
+
+                        {/* Filter pills */}
+                        <View style={[rdStyles.filtersRow, { backgroundColor: theme.colors.surface, borderBottomColor: theme.dark ? 'rgba(255,255,255,0.07)' : 'rgba(0,0,0,0.07)' }]}>
+                            <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ gap: 8, paddingHorizontal: 16, paddingVertical: 12 }}>
+                                {menuFilters.map(f => (
+                                    <TouchableOpacity
+                                        key={f}
+                                        style={[rdStyles.filterPill, { borderColor: activeFilter === f ? theme.colors.primary : (theme.dark ? 'rgba(255,255,255,0.2)' : 'rgba(0,0,0,0.15)'), backgroundColor: activeFilter === f ? theme.colors.primary + '22' : 'transparent' }]}
+                                        onPress={() => { triggerHaptic(); setActiveFilter(f); }}
+                                    >
+                                        {f === 'veg' && <MaterialCommunityIcons name="leaf" size={13} color={activeFilter === f ? theme.colors.primary : '#4CAF50'} style={{ marginRight: 4 }} />}
+                                        {f === 'non-veg' && <MaterialCommunityIcons name="food-drumstick" size={13} color={activeFilter === f ? theme.colors.primary : '#F44336'} style={{ marginRight: 4 }} />}
+                                        {f === 'highly ordered' && <MaterialCommunityIcons name="trending-up" size={13} color={activeFilter === f ? theme.colors.primary : '#FF6D00'} style={{ marginRight: 4 }} />}
+                                        <Text style={[rdStyles.filterPillText, { color: activeFilter === f ? theme.colors.primary : theme.colors.onSurface }]}>
+                                            {f.charAt(0).toUpperCase() + f.slice(1)}
+                                        </Text>
                                     </TouchableOpacity>
                                 ))}
                             </ScrollView>
                         </View>
-                        <Text variant="titleLarge" style={{fontWeight: 'bold', color: theme.colors.onSurface, marginLeft: 16, marginBottom: 8}}>Menu</Text>
+
+                        {/* Search in menu */}
+                        <View style={{ paddingHorizontal: 16, paddingTop: 12, paddingBottom: 4, backgroundColor: theme.colors.surface }}>
+                            <Searchbar
+                                placeholder="Search in menu..."
+                                value={menuSearchQuery}
+                                onChangeText={setMenuSearchQuery}
+                                style={{ elevation: 0, backgroundColor: theme.dark ? 'rgba(255,255,255,0.07)' : 'rgba(0,0,0,0.05)', borderRadius: 10 }}
+                                inputStyle={{ fontSize: 14 }}
+                            />
+                        </View>
+
+                        {/* Past orders section */}
+                        {pastOrderItems.length > 0 && (
+                            <View style={[rdStyles.pastOrdersSection, { backgroundColor: theme.colors.surface, borderBottomColor: theme.dark ? 'rgba(255,255,255,0.07)' : 'rgba(0,0,0,0.07)' }]}>
+                                <Text style={[rdStyles.sectionHeading, { color: theme.colors.onSurface }]}>Your Orders and Collections</Text>
+                                <Text style={[rdStyles.sectionSubtitle, { color: theme.colors.onSurfaceVariant }]}>Past customisations are pre-selected</Text>
+                                {pastOrderItems.map(item => (
+                                    <PastOrderItem key={item.id} item={item} restaurant={restaurant} theme={theme} />
+                                ))}
+                            </View>
+                        )}
+
+                        <View style={[rdStyles.menuHeader, { backgroundColor: theme.colors.surface }]}>
+                            <Text style={[rdStyles.sectionHeading, { color: theme.colors.onSurface }]}>Menu</Text>
+                        </View>
                     </>
                 )}
-                contentContainerStyle={{paddingBottom: 80}}
+                contentContainerStyle={{ paddingBottom: 100, backgroundColor: theme.colors.background }}
             />
-            <CartFAB navigation={navigation}/>
+            <CartFAB navigation={navigation} />
         </AppBackground>
     );
 };
@@ -1324,3 +1536,119 @@ const styles = StyleSheet.create({
     stepLine: { height: 3, flex: 1, marginTop: 18, marginHorizontal: 4, borderRadius: 2 },
     reorderBtn: { flexDirection: 'row', alignItems: 'center', paddingHorizontal: 12, paddingVertical: 6, borderRadius: 16 },
 });
+
+// ─── PastOrderItem component ────────────────────────────────────────────────
+const PastOrderItem = ({ item, restaurant, theme }) => {
+    const { addToCart } = useCart();
+    return (
+        <View style={[rdStyles.pastOrderItem, { borderBottomColor: theme.dark ? 'rgba(255,255,255,0.07)' : 'rgba(0,0,0,0.07)' }]}>
+            <Image source={{ uri: restaurant.image }} style={rdStyles.pastOrderImage} resizeMode="cover" />
+            <View style={{ flex: 1, marginLeft: 12 }}>
+                <Text style={[rdStyles.pastOrderName, { color: theme.colors.onSurface }]}>{item.name}</Text>
+                <Text style={[rdStyles.pastOrderPrice, { color: theme.colors.onSurfaceVariant }]}>\u20b9{item.price}</Text>
+            </View>
+            <TouchableOpacity
+                style={[rdStyles.addBtn, { backgroundColor: theme.colors.primary, width: 80 }]}
+                onPress={() => { addToCart({ ...item, restaurantName: restaurant.name }); }}
+            >
+                <MaterialCommunityIcons name="plus" size={14} color="#FFF" />
+                <Text style={rdStyles.addBtnText}>ADD</Text>
+            </TouchableOpacity>
+        </View>
+    );
+};
+
+// ─── Home screen styles ──────────────────────────────────────────────────────
+const homeStyles = StyleSheet.create({
+    topBar: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingHorizontal: 16, paddingTop: 14, paddingBottom: 8 },
+    topBarLocation: { fontSize: 16, fontWeight: '700', marginRight: 2 },
+    topBarAddress: { fontSize: 12, marginTop: 1 },
+    searchRow: { flexDirection: 'row', alignItems: 'center', paddingHorizontal: 16, marginBottom: 12, gap: 10 },
+    searchBox: { flex: 1 },
+    searchInner: { flexDirection: 'row', alignItems: 'center', borderRadius: 12, borderWidth: 1, paddingHorizontal: 12, paddingVertical: 12, gap: 8 },
+    searchPlaceholder: { fontSize: 14 },
+    vegBadge: { alignItems: 'center', borderRadius: 10, paddingHorizontal: 8, paddingVertical: 4 },
+    vegLabel: { fontSize: 11, fontWeight: '800', letterSpacing: 0.5 },
+    offlineBanner: { flexDirection: 'row', alignItems: 'center', marginHorizontal: 16, padding: 10, borderRadius: 10, marginBottom: 10 },
+    bannerSlide: { width: SCREEN_WIDTH, height: 150, flexDirection: 'row', alignItems: 'center', paddingHorizontal: 24, justifyContent: 'space-between' },
+    bannerTextBlock: { flex: 1 },
+    bannerTitle: { fontSize: 12, fontWeight: '600', letterSpacing: 1, textTransform: 'uppercase', marginBottom: 2 },
+    bannerHighlight: { fontSize: 28, fontWeight: '900', letterSpacing: -0.5, marginBottom: 4 },
+    bannerSub: { fontSize: 13, marginBottom: 12 },
+    bannerBtn: { flexDirection: 'row', alignItems: 'center', alignSelf: 'flex-start', borderWidth: 1, borderRadius: 20, paddingVertical: 6, paddingHorizontal: 14, gap: 4 },
+    bannerBtnText: { fontSize: 13, fontWeight: '600' },
+    bannerIconCircle: { width: 90, height: 90, borderRadius: 45, justifyContent: 'center', alignItems: 'center' },
+    dotsRow: { flexDirection: 'row', justifyContent: 'center', gap: 6, paddingVertical: 10 },
+    dot: { width: 6, height: 6, borderRadius: 3 },
+    categoryScroll: { paddingHorizontal: 16, gap: 16, paddingBottom: 12, paddingTop: 4 },
+    categoryItem: { alignItems: 'center' },
+    categoryImageWrap: { width: 64, height: 64, borderRadius: 32, overflow: 'hidden', marginBottom: 6 },
+    categoryImage: { width: '100%', height: '100%' },
+    categoryLabel: { fontSize: 11, textAlign: 'center', fontWeight: '500' },
+    chipsRow: { paddingHorizontal: 16, gap: 8, paddingBottom: 10 },
+    filterChip: { flexDirection: 'row', alignItems: 'center', paddingHorizontal: 12, paddingVertical: 7, borderRadius: 20 },
+    chipLabel: { fontSize: 13, fontWeight: '500' },
+    sortChip: { flexDirection: 'row', alignItems: 'center', paddingVertical: 6, paddingHorizontal: 12, borderRadius: 20 },
+    sectionTitle: { fontSize: 12, fontWeight: '700', letterSpacing: 0.8, marginHorizontal: 16, marginTop: 16, marginBottom: 10 },
+    recommendedGrid: { flexDirection: 'row', flexWrap: 'wrap', paddingHorizontal: 12, gap: 8, marginBottom: 8 },
+    recommendedCell: { width: (SCREEN_WIDTH - 40) / 3, marginBottom: 4 },
+    recommendedImageWrap: { width: '100%', aspectRatio: 1, borderRadius: 10, overflow: 'hidden', marginBottom: 6, position: 'relative' },
+    recommendedImage: { width: '100%', height: '100%' },
+    recommendedOfferTag: { position: 'absolute', bottom: 0, left: 0, right: 0, backgroundColor: 'rgba(0,0,0,0.55)', paddingHorizontal: 4, paddingVertical: 3 },
+    recommendedOfferText: { color: '#FFF', fontSize: 9, fontWeight: '600' },
+    recommendedRating: { position: 'absolute', top: 6, left: 6, flexDirection: 'row', alignItems: 'center', backgroundColor: 'rgba(0,0,0,0.6)', borderRadius: 6, paddingHorizontal: 5, paddingVertical: 2, gap: 2 },
+    recommendedRatingText: { color: '#FFF', fontSize: 10, fontWeight: '700' },
+    recommendedName: { fontSize: 12, fontWeight: '600', marginBottom: 1 },
+    recommendedMeta: { fontSize: 11, marginLeft: 3 },
+});
+
+// ─── Restaurant Details screen styles ───────────────────────────────────────
+const rdStyles = StyleSheet.create({
+    heroWrap: { position: 'relative' },
+    heroImage: { width: '100%', height: 260 },
+    heroGradient: { position: 'absolute', bottom: 0, left: 0, right: 0, height: 80, backgroundColor: 'rgba(0,0,0,0.3)' },
+    backBtn: { position: 'absolute', left: 12, width: 38, height: 38, borderRadius: 19, backgroundColor: 'rgba(0,0,0,0.45)', justifyContent: 'center', alignItems: 'center' },
+    infoCard: { paddingHorizontal: 16, paddingTop: 16, paddingBottom: 8 },
+    nameRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 4 },
+    restaurantName: { fontSize: 22, fontWeight: '800', flex: 1, marginRight: 12 },
+    ratingBubble: { flexDirection: 'row', alignItems: 'center', borderRadius: 6, paddingHorizontal: 8, paddingVertical: 5, gap: 4 },
+    ratingText: { color: '#FFF', fontWeight: '700', fontSize: 14 },
+    reviewCount: { fontSize: 12, marginBottom: 6 },
+    tagsLine: { fontSize: 13, marginBottom: 10 },
+    metaRow: { flexDirection: 'row', alignItems: 'center', marginBottom: 12 },
+    metaItem: { flexDirection: 'row', alignItems: 'center', gap: 4 },
+    metaText: { fontSize: 13 },
+    ecoBadge: { flexDirection: 'row', alignItems: 'center', gap: 5, marginBottom: 12 },
+    ecoBadgeText: { fontSize: 12, color: '#4CAF50', fontWeight: '500' },
+    offerStrip: { flexDirection: 'row', alignItems: 'center', borderWidth: 1, borderRadius: 8, paddingHorizontal: 12, paddingVertical: 10, gap: 8, marginBottom: 4 },
+    offerStripText: { flex: 1, fontSize: 13, fontWeight: '500' },
+    offerCount: { flexDirection: 'row', alignItems: 'center', gap: 2 },
+    offerCountText: { fontSize: 13, fontWeight: '600' },
+    offerList: { borderRadius: 8, marginTop: 4, marginBottom: 4, paddingVertical: 8, paddingHorizontal: 12 },
+    offerListItem: { flexDirection: 'row', alignItems: 'center', gap: 8, paddingVertical: 6 },
+    offerListText: { fontSize: 13 },
+    filtersRow: { borderBottomWidth: 1 },
+    filterPill: { flexDirection: 'row', alignItems: 'center', borderWidth: 1, borderRadius: 20, paddingHorizontal: 12, paddingVertical: 7 },
+    filterPillText: { fontSize: 13, fontWeight: '500' },
+    pastOrdersSection: { paddingHorizontal: 16, paddingTop: 14, paddingBottom: 4, borderBottomWidth: 1, marginBottom: 4 },
+    sectionHeading: { fontSize: 16, fontWeight: '700', marginBottom: 2 },
+    sectionSubtitle: { fontSize: 12, marginBottom: 12 },
+    pastOrderItem: { flexDirection: 'row', alignItems: 'center', paddingVertical: 10, borderBottomWidth: 1 },
+    pastOrderImage: { width: 44, height: 44, borderRadius: 8 },
+    pastOrderName: { fontSize: 14, fontWeight: '600', marginBottom: 2 },
+    pastOrderPrice: { fontSize: 13 },
+    menuHeader: { paddingHorizontal: 16, paddingVertical: 12 },
+    menuItem: { flexDirection: 'row', alignItems: 'center', paddingHorizontal: 16, paddingVertical: 14, borderBottomWidth: 1 },
+    menuItemName: { fontSize: 15, fontWeight: '600', marginBottom: 4 },
+    menuItemPrice: { fontSize: 14, fontWeight: '500', marginBottom: 2 },
+    menuItemRight: { width: 110, alignItems: 'center' },
+    menuItemImage: { width: 100, height: 90, borderRadius: 10, marginBottom: 6 },
+    menuItemAction: { position: 'absolute', bottom: 0 },
+    qtyBox: { flexDirection: 'row', alignItems: 'center', borderRadius: 8, height: 36, width: 100, justifyContent: 'space-between' },
+    qtyBtn: { width: 36, height: 36, justifyContent: 'center', alignItems: 'center' },
+    qtyText: { color: '#FFF', fontWeight: 'bold', fontSize: 16 },
+    addBtn: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', borderRadius: 8, height: 34, width: 100, gap: 4 },
+    addBtnText: { color: '#FFF', fontWeight: '700', fontSize: 13 },
+    highlyOrderedBadge: { flexDirection: 'row', alignItems: 'center', gap: 3, marginLeft: 8 },
+    highlyOrderedText: { fontSize: 11, color: '#FF6D00', fontWeight: '600' },
+});

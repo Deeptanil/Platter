@@ -50,3 +50,78 @@ export const ALL_RESTAURANTS = [
 ];
 
 export const EXPLORE_MORE = ALL_RESTAURANTS.slice(0, 8);
+
+const FOOD_IMAGES_POOL = [
+    'https://images.unsplash.com/photo-1546069901-ba9599a7e63c?auto=format&fit=crop&w=400&q=80',
+    'https://images.unsplash.com/photo-1565299624946-b28f40a0ae38?auto=format&fit=crop&w=400&q=80',
+    'https://images.unsplash.com/photo-1484723091739-30a097e8f929?auto=format&fit=crop&w=400&q=80',
+    'https://images.unsplash.com/photo-1482049016688-2d3e1b311543?auto=format&fit=crop&w=400&q=80',
+    'https://images.unsplash.com/photo-1473093295043-cdd812d0e601?auto=format&fit=crop&w=400&q=80',
+    'https://images.unsplash.com/photo-1565958011703-44f9829ba187?auto=format&fit=crop&w=400&q=80',
+    'https://images.unsplash.com/photo-1488477181946-6428a0291777?auto=format&fit=crop&w=400&q=80',
+    'https://images.unsplash.com/photo-1497034825429-c343d7c6a68f?auto=format&fit=crop&w=400&q=80',
+    'https://images.unsplash.com/photo-1467003909585-2f8a72700288?auto=format&fit=crop&w=400&q=80',
+    'https://images.unsplash.com/photo-1476224203421-9ac39bcb3327?auto=format&fit=crop&w=400&q=80'
+];
+
+export const getFoodImage = (name) => {
+    if (!name) return FOOD_IMAGES_POOL[0];
+    const n = name.toLowerCase();
+    
+    // 1. Kebab & Tikka
+    if (n.includes('kebab') || n.includes('tikka') || n.includes('reshmi') || n.includes('malai') || n.includes('seekh') || n.includes('mutton fry') || n.includes('bhuna')) {
+        return 'https://images.unsplash.com/photo-1603360946369-fa9904fe7af6?auto=format&fit=crop&w=400&q=80';
+    }
+    // 2. Biryani & Rice
+    if (n.includes('biryani') || n.includes('pulao') || n.includes('rice') || n.includes('bhaat') || n.includes('khichdi') || n.includes('jeera')) {
+        return 'https://images.unsplash.com/photo-1589301760014-d929f3979dbc?auto=format&fit=crop&w=400&q=80';
+    }
+    // 3. Pizza
+    if (n.includes('pizza') || n.includes('pasta') || n.includes('lasagne') || n.includes('macaroni')) {
+        return 'https://images.unsplash.com/photo-1513104890138-7c749659a591?auto=format&fit=crop&w=400&q=80';
+    }
+    // 4. Burger & Sliders
+    if (n.includes('burger') || n.includes('sliders') || n.includes('sandwich') || n.includes('clubhouse')) {
+        return 'https://images.unsplash.com/photo-1568901346375-23c9450c58cd?auto=format&fit=crop&w=400&q=80';
+    }
+    // 5. Seafood
+    if (n.includes('fish') || n.includes('prawn') || n.includes('crab') || n.includes('lobster') || n.includes('seafood') || n.includes('machi') || n.includes('bombil') || n.includes('clam')) {
+        return 'https://images.unsplash.com/photo-1519708227418-c8fd9a32b7a2?auto=format&fit=crop&w=400&q=80';
+    }
+    // 6. Rolls & Wraps
+    if (n.includes('roll') || n.includes('frankie') || n.includes('wrap') || n.includes('shawarma') || n.includes('kathi')) {
+        return 'https://images.unsplash.com/photo-1606755962773-d324e0a13086?auto=format&fit=crop&w=400&q=80';
+    }
+    // 7. Salads & Bowls
+    if (n.includes('salad') || n.includes('bowl') || n.includes('detox') || n.includes('sprouts') || n.includes('avocado')) {
+        return 'https://images.unsplash.com/photo-1512621776951-a57141f2eefd?auto=format&fit=crop&w=400&q=80';
+    }
+    // 8. Roti, Naan, Pav, Toast
+    if (n.includes('roti') || n.includes('naan') || n.includes('pav') || n.includes('toast') || n.includes('bread') || n.includes('bhakri') || n.includes('puri') || n.includes('wade') || n.includes('akuri') || n.includes('paratha')) {
+        return 'https://images.unsplash.com/photo-1509440159596-0249088772ff?auto=format&fit=crop&w=400&q=80';
+    }
+    // 9. Hot Beverages (Chai & Coffee)
+    if (n.includes('chai') || n.includes('tea') || n.includes('coffee') || n.includes('kaapi') || n.includes('latte') || n.includes('cappuccino')) {
+        return 'https://images.unsplash.com/photo-1514432324607-a09d9b4aefdd?auto=format&fit=crop&w=400&q=80';
+    }
+    // 10. Cold Beverages (Juice, Shakes, Lassi, Chaas, Soda)
+    if (n.includes('juice') || n.includes('shake') || n.includes('lassi') || n.includes('chaas') || n.includes('soda') || n.includes('drink') || n.includes('cola') || n.includes('water') || n.includes('smoothie') || n.includes('thums') || n.includes('sherbet')) {
+        return 'https://images.unsplash.com/photo-1551024709-8f23befc6f87?auto=format&fit=crop&w=400&q=80';
+    }
+    // 11. Cakes & Desserts (Cake, Cheesecake, Caramel, Phirni, Custard, Shahi Tukda)
+    if (n.includes('cake') || n.includes('cheesecake') || n.includes('custard') || n.includes('phirni') || n.includes('tart') || n.includes('pudding') || n.includes('mousse') || n.includes('brownie') || n.includes('sweet') || n.includes('kulfi') || n.includes('falooda') || n.includes('shrikhand') || n.includes('basundi') || n.includes('modak') || n.includes('jamun') || n.includes('halwa') || n.includes('chocolat') || n.includes('theobroma')) {
+        return 'https://images.unsplash.com/photo-1551024506-0bccd828d307?auto=format&fit=crop&w=400&q=80';
+    }
+    // 12. Curry, Soup & Stew
+    if (n.includes('curry') || n.includes('stew') || n.includes('soup') || n.includes('dal') || n.includes('masala') || n.includes('rassa') || n.includes('nihari') || n.includes('korma') || n.includes('paya') || n.includes('kadhai') || n.includes('paneer butter') || n.includes('gravy')) {
+        return 'https://images.unsplash.com/photo-1565557623262-b51c2513a641?auto=format&fit=crop&w=400&q=80';
+    }
+
+    // Fallback: Hash name to select a random stable food image
+    let hash = 0;
+    for (let i = 0; i < n.length; i++) {
+        hash = n.charCodeAt(i) + ((hash << 5) - hash);
+    }
+    const index = Math.abs(hash) % FOOD_IMAGES_POOL.length;
+    return FOOD_IMAGES_POOL[index];
+};

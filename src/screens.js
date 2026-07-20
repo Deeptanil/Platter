@@ -12,7 +12,7 @@ import * as ImagePicker from 'expo-image-picker';
 import { useNetInfo } from '@react-native-community/netinfo';
 import { useAppTheme, useSettings, useUser, useCart } from './context';
 import { BigRestaurantCard, RecommendedCard, CartFAB, GlassCard, GlassInput, AppBackground, GlassButton } from './components';
-import { ALL_RESTAURANTS, CATEGORIES, MOODS } from './data';
+import { ALL_RESTAURANTS, CATEGORIES, MOODS, getFoodImage } from './data';
 
 const triggerHaptic = () => Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
 
@@ -550,7 +550,7 @@ export const HomeScreen = ({ navigation, route }) => {
     );
 };
 
-const MenuItemCard = ({ item, restaurant }) => {
+const MenuItemCard = ({ item, restaurant, onPressImage }) => {
     const { theme } = useAppTheme();
     const { cart, addToCart, removeFromCart } = useCart();
     const cartItem = cart.find(ci => ci.id === item.id);
@@ -590,9 +590,9 @@ const MenuItemCard = ({ item, restaurant }) => {
 
             {/* Right: image + ADD button */}
             <View style={rdStyles.menuItemRight}>
-                <View style={{ borderRadius: 14, overflow: 'hidden' }}>
-                    <Image source={{ uri: restaurant.image }} style={rdStyles.menuItemImage} resizeMode="cover" />
-                </View>
+                <TouchableOpacity onPress={() => onPressImage && onPressImage(item)} activeOpacity={0.88} style={{ borderRadius: 14, overflow: 'hidden' }}>
+                    <Image source={{ uri: getFoodImage(item.name) }} style={rdStyles.menuItemImage} resizeMode="cover" />
+                </TouchableOpacity>
                 <View style={rdStyles.menuItemAction}>
                     {quantity > 0 ? (
                         <LinearGradient colors={['#8B5CF6', '#6C3BF5']} start={{ x: 0, y: 0 }} end={{ x: 1, y: 0 }} style={rdStyles.qtyBox}>
@@ -618,6 +618,140 @@ const MenuItemCard = ({ item, restaurant }) => {
     );
 };
 
+const FoodDetailsPopup = ({ item, restaurant, onClose, theme }) => {
+    const { addToCart } = useCart();
+    const [qty, setQty] = useState(1);
+    const [selectedPairings, setSelectedPairings] = useState([]);
+
+    if (!item) return null;
+
+    // Get 3 relevant side pairings (dessert/beverages/breads) from the restaurant's menu
+    const pairings = restaurant.menu.filter(i => {
+        if (i.id === item.id) return false;
+        const name = i.name.toLowerCase();
+        return i.price < 220 || name.includes('lassi') || name.includes('chaas') || name.includes('soda') || name.includes('cake') || name.includes('custard') || name.includes('roti') || name.includes('naan') || name.includes('pav') || name.includes('tea') || name.includes('coffee') || name.includes('sherbet');
+    }).slice(0, 3);
+
+    const togglePairing = (pairItem) => {
+        setSelectedPairings(prev => {
+            if (prev.some(p => p.id === pairItem.id)) {
+                return prev.filter(p => p.id !== pairItem.id);
+            } else {
+                return [...prev, pairItem];
+            }
+        });
+    };
+
+    const handleAdd = () => {
+        triggerHaptic();
+        // 1. Add main item with quantity
+        for (let i = 0; i < qty; i++) {
+            addToCart({ ...item, restaurantName: restaurant.name });
+        }
+        // 2. Add selected pairings
+        selectedPairings.forEach(pair => {
+            addToCart({ ...pair, restaurantName: restaurant.name });
+        });
+        onClose();
+    };
+
+    const pairingsPrice = selectedPairings.reduce((sum, p) => sum + p.price, 0);
+    const totalPrice = (item.price * qty) + pairingsPrice;
+
+    return (
+        <View style={{ flex: 1, position: 'relative' }}>
+            {/* Scrollable sheet body */}
+            <ScrollView contentContainerStyle={{ paddingBottom: 110 }}>
+                {/* Large food image */}
+                <View style={rdStyles.popupImageWrap}>
+                    <Image source={{ uri: getFoodImage(item.name) }} style={rdStyles.popupImage} resizeMode="cover" />
+                    <LinearGradient colors={['rgba(0,0,0,0.3)', 'transparent']} style={StyleSheet.absoluteFill} />
+                    <TouchableOpacity style={rdStyles.popupCloseBtn} onPress={onClose}>
+                        <MaterialCommunityIcons name="close" size={20} color="#FFF" />
+                    </TouchableOpacity>
+                </View>
+
+                {/* Main Food Info */}
+                <View style={{ padding: 18 }}>
+                    <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 8 }}>
+                        <View style={[{ width: 16, height: 16, borderRadius: 3, borderWidth: 1.5, justifyContent: 'center', alignItems: 'center', marginRight: 6 }, { borderColor: item.isVeg ? '#22C55E' : '#EF4444' }]}>
+                            <View style={{ width: 8, height: 8, borderRadius: 4, backgroundColor: item.isVeg ? '#22C55E' : '#EF4444' }} />
+                        </View>
+                        <RNText style={{ fontSize: 12, fontWeight: '700', color: theme.colors.primary }}>POPULAR</RNText>
+                    </View>
+                    <RNText style={{ fontSize: 20, fontWeight: '800', color: theme.colors.onSurface, marginBottom: 6 }}>{item.name}</RNText>
+                    <RNText style={{ fontSize: 15, fontWeight: '700', color: theme.colors.primary, marginBottom: 12 }}>₹{item.price}</RNText>
+                    
+                    <RNText style={{ fontSize: 13, color: theme.colors.onSurfaceVariant, lineHeight: 18 }}>
+                        {item.name.includes('pcs') ? 'Chef\'s special portion' : 'Serves 1'} | Freshly prepared {item.name.toLowerCase()} cooked to perfection with traditional spices and rich aroma. Made with premium quality ingredients. Contains natural nutrients.
+                    </RNText>
+                </View>
+
+                {/* Separator */}
+                <View style={{ height: 6, backgroundColor: theme.dark ? 'rgba(255,255,255,0.04)' : 'rgba(0,0,0,0.03)', marginVertical: 4 }} />
+
+                {/* Pairings section */}
+                {pairings.length > 0 && (
+                    <View style={{ padding: 18 }}>
+                        <RNText style={{ fontSize: 15, fontWeight: '800', color: theme.colors.onSurface, marginBottom: 4 }}>Dessert & Beverages</RNText>
+                        <RNText style={{ fontSize: 12, color: theme.colors.onSurfaceVariant, marginBottom: 14 }}>Select add-ons to round out your meal</RNText>
+                        
+                        <View style={{ gap: 14 }}>
+                            {pairings.map(pair => {
+                                const isSelected = selectedPairings.some(p => p.id === pair.id);
+                                return (
+                                    <TouchableOpacity
+                                        key={pair.id}
+                                        style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}
+                                        onPress={() => togglePairing(pair)}
+                                        activeOpacity={0.8}
+                                    >
+                                        <View style={{ flexDirection: 'row', alignItems: 'center', gap: 12, flex: 1 }}>
+                                            <Image source={{ uri: getFoodImage(pair.name) }} style={{ width: 44, height: 44, borderRadius: 8 }} />
+                                            <View style={{ flex: 1 }}>
+                                                <RNText style={{ fontSize: 14, fontWeight: '600', color: theme.colors.onSurface }} numberOfLines={1}>{pair.name}</RNText>
+                                                <RNText style={{ fontSize: 12, color: theme.colors.onSurfaceVariant, marginTop: 1 }}>₹{pair.price}</RNText>
+                                            </View>
+                                        </View>
+                                        <Checkbox.Android
+                                            status={isSelected ? 'checked' : 'unchecked'}
+                                            onPress={() => togglePairing(pair)}
+                                            color={theme.colors.primary}
+                                        />
+                                    </TouchableOpacity>
+                                );
+                            })}
+                        </View>
+                    </View>
+                )}
+            </ScrollView>
+
+            {/* Pinned Add to Cart Footer */}
+            <BlurView intensity={theme.dark ? 40 : 60} tint={theme.dark ? 'dark' : 'light'} style={[rdStyles.popupFooter, { borderTopColor: theme.dark ? 'rgba(255,255,255,0.08)' : 'rgba(108,59,245,0.1)' }]}>
+                <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', width: '100%' }}>
+                    {/* Qty Selector */}
+                    <LinearGradient colors={['#8B5CF6', '#6C3BF5']} start={{ x: 0, y: 0 }} end={{ x: 1, y: 0 }} style={rdStyles.popupQtyBox}>
+                        <TouchableOpacity onPress={() => setQty(q => Math.max(1, q - 1))} style={rdStyles.popupQtyBtn}>
+                            <MaterialCommunityIcons name="minus" size={16} color="#FFF" />
+                        </TouchableOpacity>
+                        <RNText style={rdStyles.popupQtyText}>{qty}</RNText>
+                        <TouchableOpacity onPress={() => setQty(q => q + 1)} style={rdStyles.popupQtyBtn}>
+                            <MaterialCommunityIcons name="plus" size={16} color="#FFF" />
+                        </TouchableOpacity>
+                    </LinearGradient>
+
+                    {/* Add button */}
+                    <TouchableOpacity onPress={handleAdd} activeOpacity={0.85} style={{ flex: 1, marginLeft: 16 }}>
+                        <LinearGradient colors={['#EF4444', '#DC2626']} start={{ x: 0, y: 0 }} end={{ x: 1, y: 0 }} style={rdStyles.popupAddBtn}>
+                            <RNText style={{ color: '#FFF', fontSize: 16, fontWeight: '800' }}>Add item ₹{totalPrice}</RNText>
+                        </LinearGradient>
+                    </TouchableOpacity>
+                </View>
+            </BlurView>
+        </View>
+    );
+};
+
 export const RestaurantDetailsScreen = ({ navigation, route }) => {
     const { restaurant, filterMode } = route.params;
     const { theme } = useAppTheme();
@@ -626,6 +760,7 @@ export const RestaurantDetailsScreen = ({ navigation, route }) => {
     const [activeFilter, setActiveFilter] = useState('all');
     const [menuSearchQuery, setMenuSearchQuery] = useState('');
     const [showOffers, setShowOffers] = useState(false);
+    const [selectedFoodDetails, setSelectedFoodDetails] = useState(null);
     const insets = useSafeAreaInsets();
 
     const hasNonVeg = restaurant.menu.some(item => !item.isVeg);
@@ -696,7 +831,13 @@ export const RestaurantDetailsScreen = ({ navigation, route }) => {
             <FlatList
                 data={flatFilteredMenu}
                 keyExtractor={(item) => item.id}
-                renderItem={({ item }) => <MenuItemCard item={item} restaurant={restaurant} />}
+                renderItem={({ item }) => (
+                    <MenuItemCard
+                        item={item}
+                        restaurant={restaurant}
+                        onPressImage={(food) => setSelectedFoodDetails(food)}
+                    />
+                )}
                 ListHeaderComponent={() => (
                     <>
                         {/* Hero image with frosted back button */}
@@ -847,6 +988,31 @@ export const RestaurantDetailsScreen = ({ navigation, route }) => {
                 contentContainerStyle={{ paddingBottom: 160 }}
             />
             <CartFAB navigation={navigation} bottomOffset={16 + insets.bottom} />
+            <Modal
+                visible={selectedFoodDetails !== null}
+                transparent
+                animationType="slide"
+                onRequestClose={() => setSelectedFoodDetails(null)}
+            >
+                <View style={rdStyles.modalContainer}>
+                    <Pressable style={rdStyles.modalOverlay} onPress={() => setSelectedFoodDetails(null)} />
+                    <BlurView
+                        intensity={theme.dark ? 40 : 65}
+                        tint={theme.dark ? 'dark' : 'light'}
+                        style={[rdStyles.modalContent, {
+                            borderColor: theme.dark ? 'rgba(255,255,255,0.08)' : 'rgba(108,59,245,0.12)',
+                            backgroundColor: theme.dark ? 'rgba(15,12,30,0.85)' : 'rgba(255,255,255,0.85)',
+                        }]}
+                    >
+                        <FoodDetailsPopup
+                            item={selectedFoodDetails}
+                            restaurant={restaurant}
+                            onClose={() => setSelectedFoodDetails(null)}
+                            theme={theme}
+                        />
+                    </BlurView>
+                </View>
+            </Modal>
         </AppBackground>
     );
 };
@@ -1781,5 +1947,77 @@ const rdStyles = StyleSheet.create({
     addBtnText: { color: '#FFF', fontWeight: '700', fontSize: 13 },
     highlyOrderedBadge: { flexDirection: 'row', alignItems: 'center', gap: 3, paddingHorizontal: 6, paddingVertical: 2, borderRadius: 8 },
     highlyOrderedText: { fontSize: 11, color: '#FF6D00', fontWeight: '700' },
+    modalContainer: {
+        flex: 1,
+        justifyContent: 'flex-end',
+    },
+    modalOverlay: {
+        ...StyleSheet.absoluteFillObject,
+        backgroundColor: 'rgba(0,0,0,0.5)',
+    },
+    modalContent: {
+        borderTopLeftRadius: 28,
+        borderTopRightRadius: 28,
+        height: '80%',
+        overflow: 'hidden',
+        borderTopWidth: 1.5,
+    },
+    popupImageWrap: {
+        height: 240,
+        position: 'relative',
+    },
+    popupImage: {
+        width: '100%',
+        height: '100%',
+    },
+    popupCloseBtn: {
+        position: 'absolute',
+        top: 16,
+        right: 16,
+        width: 32,
+        height: 32,
+        borderRadius: 16,
+        backgroundColor: 'rgba(0,0,0,0.5)',
+        justifyContent: 'center',
+        alignItems: 'center',
+    },
+    popupFooter: {
+        position: 'absolute',
+        bottom: 0,
+        left: 0,
+        right: 0,
+        paddingHorizontal: 16,
+        paddingTop: 12,
+        paddingBottom: 24,
+        borderTopWidth: 1,
+        flexDirection: 'row',
+        alignItems: 'center',
+    },
+    popupQtyBox: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        borderRadius: 12,
+        height: 48,
+        width: 120,
+        justifyContent: 'space-between',
+        paddingHorizontal: 8,
+    },
+    popupQtyBtn: {
+        width: 32,
+        height: 32,
+        justifyContent: 'center',
+        alignItems: 'center',
+    },
+    popupQtyText: {
+        color: '#FFF',
+        fontSize: 16,
+        fontWeight: '800',
+    },
+    popupAddBtn: {
+        borderRadius: 12,
+        height: 48,
+        justifyContent: 'center',
+        alignItems: 'center',
+    },
 });
 

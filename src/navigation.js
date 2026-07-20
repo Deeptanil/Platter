@@ -26,7 +26,7 @@ const FloatingTabBar = ({ state, navigation, theme }) => {
 
     const TABS = [
         { key: 'Home', label: 'Home', icon: 'home-variant', iconActive: 'home-variant' },
-        { key: 'Under250', label: '₹250', icon: 'currency-inr', iconActive: 'currency-inr' },
+        { key: 'Under250', label: 'Under 250', icon: 'currency-inr', iconActive: 'currency-inr' },
         { key: 'Healthy', label: 'Healthy', icon: 'leaf-circle-outline', iconActive: 'leaf-circle' },
     ];
 
@@ -59,17 +59,17 @@ const FloatingTabBar = ({ state, navigation, theme }) => {
                                     colors={['#8B5CF6', '#6C3BF5']}
                                     style={dockStyles.activePill}
                                 >
-                                    <MaterialCommunityIcons name={tab.iconActive} size={20} color="#FFF" />
-                                    <Text style={dockStyles.activeLabel}>{tab.label}</Text>
+                                    <MaterialCommunityIcons name={tab.iconActive} size={18} color="#FFF" />
+                                    <Text style={dockStyles.activeLabel} numberOfLines={1}>{tab.label}</Text>
                                 </LinearGradient>
                             ) : (
                                 <View style={dockStyles.inactiveItem}>
                                     <MaterialCommunityIcons
                                         name={tab.icon}
-                                        size={22}
+                                        size={20}
                                         color={theme.dark ? 'rgba(255,255,255,0.45)' : 'rgba(108,59,245,0.45)'}
                                     />
-                                    <Text style={[dockStyles.inactiveLabel, { color: theme.dark ? 'rgba(255,255,255,0.4)' : 'rgba(108,59,245,0.4)' }]}>
+                                    <Text style={[dockStyles.inactiveLabel, { color: theme.dark ? 'rgba(255,255,255,0.4)' : 'rgba(108,59,245,0.4)' }]} numberOfLines={1}>
                                         {tab.label}
                                     </Text>
                                 </View>
@@ -172,15 +172,15 @@ const dockStyles = StyleSheet.create({
     outerWrap: {
         position: 'absolute',
         bottom: 0,
-        left: 20,
-        right: 20,
+        left: 16,
+        right: 16,
     },
     dock: {
         flexDirection: 'row',
-        borderRadius: 32,
-        borderWidth: 1,
-        paddingVertical: 10,
-        paddingHorizontal: 12,
+        borderRadius: 36,
+        borderWidth: 1.5,
+        paddingVertical: 5,
+        paddingHorizontal: 5,
         overflow: 'hidden',
         alignItems: 'center',
         justifyContent: 'space-around',
@@ -188,16 +188,20 @@ const dockStyles = StyleSheet.create({
     tabItem: {
         flex: 1,
         alignItems: 'center',
+        justifyContent: 'center',
+        height: 48,
     },
     activePill: {
         flexDirection: 'row',
         alignItems: 'center',
+        justifyContent: 'center',
         paddingHorizontal: 16,
-        paddingVertical: 8,
-        borderRadius: 20,
+        borderRadius: 28,
         gap: 6,
+        width: '95%',
+        height: 42,
     },
-    activeLabel: { color: '#FFF', fontSize: 13, fontWeight: '700' },
-    inactiveItem: { alignItems: 'center', paddingVertical: 4 },
-    inactiveLabel: { fontSize: 10, marginTop: 2, fontWeight: '500' },
+    activeLabel: { color: '#FFF', fontSize: 13, fontWeight: '800' },
+    inactiveItem: { alignItems: 'center', justifyContent: 'center', height: '100%', width: '100%' },
+    inactiveLabel: { fontSize: 10, marginTop: 2, fontWeight: '600' },
 });

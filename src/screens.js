@@ -169,20 +169,23 @@ export const AuthScreen = ({ navigation }) => {
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
 
 const BANNERS = [
-    { id: 'b1', title: 'MEALS UNDER', highlight: '\u20b9250', subtitle: 'Budget-friendly picks near you', gradColors: ['#0F2027', '#203A43', '#2C5364'], accent: '#00E676', icon: 'food-variant' },
-    { id: 'b2', title: 'FREE DELIVERY', highlight: 'Above \u20b9299', subtitle: 'Every restaurant, every order', gradColors: ['#1a0038', '#4a0072', '#7B1FA2'], accent: '#CE93D8', icon: 'bike-fast' },
+    { id: 'b1', title: 'MEALS UNDER', highlight: '₹250', subtitle: 'Budget-friendly picks near you', gradColors: ['#0F2027', '#203A43', '#2C5364'], accent: '#00E676', icon: 'food-variant' },
+    { id: 'b2', title: 'FREE DELIVERY', highlight: 'Above ₹299', subtitle: 'Every restaurant, every order', gradColors: ['#1a0038', '#4a0072', '#7B1FA2'], accent: '#CE93D8', icon: 'bike-fast' },
     { id: 'b3', title: 'LATE NIGHT', highlight: 'SPECIALS', subtitle: 'Open past midnight just for you', gradColors: ['#1a0800', '#7f3b00', '#bf360c'], accent: '#FFAB40', icon: 'moon-waning-crescent' },
 ];
 
 const HomeBannerCarousel = ({ theme }) => {
     const [activeIndex, setActiveIndex] = useState(0);
     const scrollRef = useRef(null);
+    const BANNER_WIDTH = SCREEN_WIDTH - 40;
+    const GAP = 12;
+    const INTERVAL = BANNER_WIDTH + GAP;
 
     useEffect(() => {
         const interval = setInterval(() => {
             setActiveIndex(prev => {
                 const next = (prev + 1) % BANNERS.length;
-                scrollRef.current?.scrollTo({ x: next * SCREEN_WIDTH, animated: true });
+                scrollRef.current?.scrollTo({ x: next * INTERVAL, animated: true });
                 return next;
             });
         }, 3500);
@@ -190,15 +193,16 @@ const HomeBannerCarousel = ({ theme }) => {
     }, []);
 
     return (
-        <View style={{ marginHorizontal: 16, marginBottom: 12 }}>
+        <View style={{ marginBottom: 12 }}>
             <ScrollView
                 ref={scrollRef}
                 horizontal
-                pagingEnabled
                 showsHorizontalScrollIndicator={false}
                 decelerationRate="fast"
-                snapToInterval={SCREEN_WIDTH - 32}
-                onMomentumScrollEnd={e => setActiveIndex(Math.round(e.nativeEvent.contentOffset.x / (SCREEN_WIDTH - 32)))}
+                snapToInterval={INTERVAL}
+                snapToAlignment="start"
+                contentContainerStyle={{ paddingHorizontal: 16, gap: GAP }}
+                onMomentumScrollEnd={e => setActiveIndex(Math.round(e.nativeEvent.contentOffset.x / INTERVAL))}
             >
                 {BANNERS.map(b => (
                     <LinearGradient
@@ -206,7 +210,7 @@ const HomeBannerCarousel = ({ theme }) => {
                         colors={b.gradColors}
                         start={{ x: 0, y: 0 }}
                         end={{ x: 1, y: 1 }}
-                        style={homeStyles.bannerSlide}
+                        style={[homeStyles.bannerSlide, { width: BANNER_WIDTH }]}
                     >
                         <BlurView intensity={10} tint="dark" style={StyleSheet.absoluteFill} />
                         <View style={homeStyles.bannerTextBlock}>
@@ -237,7 +241,7 @@ const HomeBannerCarousel = ({ theme }) => {
 };
 
 const SORT_OPTIONS = [
-    { key: 'default', label: 'Default', icon: 'star' },
+    { key: 'default', label: 'Best', icon: 'thumb-up' },
     { key: 'rating', label: 'Top Rated', icon: 'star-circle' },
     { key: 'delivery', label: 'Fastest Delivery', icon: 'clock-fast' },
     { key: 'distance', label: 'Nearest First', icon: 'map-marker' },
@@ -245,10 +249,9 @@ const SORT_OPTIONS = [
 
 const FILTER_CHIPS = ['Gourmet', 'No packaging charges', 'New to you', 'Fastest delivery'];
 
-const HomeScreenHeader = ({ navigation, theme, isVegOnly, setIsVegOnly, selectedCategory, setSelectedCategory, netInfo, sortOption, setSortOption }) => {
+const HomeScreenHeader = ({ navigation, theme, isVegOnly, setIsVegOnly, selectedCategory, setSelectedCategory, netInfo, sortOption, setSortOption, activeChip, setActiveChip }) => {
     const { user, selectedAddress } = useUser();
     const userInitial = user?.name ? user.name.charAt(0).toUpperCase() : 'G';
-    const [activeChip, setActiveChip] = useState(null);
 
     return (
         <>
@@ -430,6 +433,7 @@ export const HomeScreen = ({ navigation, route }) => {
     const { isVegOnly, setIsVegOnly } = useSettings();
     const [selectedCategory, setSelectedCategory] = useState('All');
     const [sortOption, setSortOption] = useState('default');
+    const [activeChip, setActiveChip] = useState(null);
     const insets = useSafeAreaInsets();
     const netInfo = useNetInfo();
 
@@ -450,6 +454,19 @@ export const HomeScreen = ({ navigation, route }) => {
             return selectedCategory === 'All' || res.tags.some(tag => tag.toLowerCase().includes(selectedCategory.toLowerCase()));
         });
 
+        if (activeChip) {
+            if (activeChip === 'Gourmet') {
+                restaurants = restaurants.filter(res => res.rating >= 4.6);
+            } else if (activeChip === 'Fastest delivery') {
+                restaurants = restaurants.filter(res => res.deliveryTime <= 25);
+            } else if (activeChip === 'New to you') {
+                restaurants = restaurants.filter(res => parseFloat(res.distance) <= 2.5);
+            } else if (activeChip === 'No packaging charges') {
+                // Mock filtering for packaging charges
+                restaurants = restaurants.filter(res => res.id % 2 === 0);
+            }
+        }
+
         if (sortOption === 'rating') restaurants = [...restaurants].sort((a, b) => b.rating - a.rating);
         else if (sortOption === 'delivery') restaurants = [...restaurants].sort((a, b) => a.deliveryTime - b.deliveryTime);
         else if (sortOption === 'distance') {
@@ -458,7 +475,7 @@ export const HomeScreen = ({ navigation, route }) => {
         }
 
         return restaurants;
-    }, [isVegOnly, selectedCategory, sortOption, filterMode]);
+    }, [isVegOnly, selectedCategory, sortOption, filterMode, activeChip]);
 
     const renderRestaurantCard = useCallback(({ item, index }) => (
         <BigRestaurantCard
@@ -489,6 +506,8 @@ export const HomeScreen = ({ navigation, route }) => {
                             netInfo={netInfo}
                             sortOption={sortOption}
                             setSortOption={setSortOption}
+                            activeChip={activeChip}
+                            setActiveChip={setActiveChip}
                         />
                     ) : (
                         <BlurView intensity={theme.dark ? 50 : 65} tint={theme.dark ? 'dark' : 'light'}
@@ -499,7 +518,7 @@ export const HomeScreen = ({ navigation, route }) => {
                                 </View>
                                 <View>
                                     <RNText style={{ fontSize: 20, fontWeight: '800', color: theme.colors.onSurface }}>
-                                        {filterMode === 'under250' ? 'Under \u20b9250' : 'Healthy Mode'}
+                                        {filterMode === 'under250' ? 'Under ₹250' : 'Healthy Mode'}
                                     </RNText>
                                     <RNText style={{ color: theme.colors.onSurfaceVariant, fontSize: 13, marginTop: 2 }}>
                                         {filterMode === 'under250' ? 'Budget-friendly spots near you' : 'Good food, great wellbeing'}
@@ -554,7 +573,7 @@ const MenuItemCard = ({ item, restaurant }) => {
                     )}
                 </View>
                 <RNText style={[rdStyles.menuItemName, { color: theme.colors.onSurface }]}>{item.name}</RNText>
-                <RNText style={[rdStyles.menuItemPrice, { color: theme.colors.primary, fontWeight: '700' }]}>\u20b9{item.price}</RNText>
+                <RNText style={[rdStyles.menuItemPrice, { color: theme.colors.primary, fontWeight: '700' }]}>₹{item.price}</RNText>
                 {item.isSpicy && (
                     <View style={{ flexDirection: 'row', alignItems: 'center', marginTop: 4 }}>
                         <MaterialCommunityIcons name="fire" size={12} color="#FF5722" />
@@ -655,9 +674,9 @@ export const RestaurantDetailsScreen = ({ navigation, route }) => {
     }, [menuSearchQuery, activeFilter, restaurant.menu, restaurant.highlyOrdered]);
 
     const DUMMY_OFFERS = [
-        `Flat \u20b960 OFF above \u20b9299`,
+        `Flat ₹60 OFF above ₹299`,
         `20% OFF on first order`,
-        `Free delivery on orders above \u20b9199`,
+        `Free delivery on orders above ₹199`,
     ];
 
     return (
@@ -1646,7 +1665,7 @@ const PastOrderItem = ({ item, restaurant, theme }) => {
             <Image source={{ uri: restaurant.image }} style={rdStyles.pastOrderImage} resizeMode="cover" />
             <View style={{ flex: 1, marginLeft: 12 }}>
                 <Text style={[rdStyles.pastOrderName, { color: theme.colors.onSurface }]}>{item.name}</Text>
-                <Text style={[rdStyles.pastOrderPrice, { color: theme.colors.onSurfaceVariant }]}>\u20b9{item.price}</Text>
+                <Text style={[rdStyles.pastOrderPrice, { color: theme.colors.onSurfaceVariant }]}>₹{item.price}</Text>
             </View>
             <TouchableOpacity
                 style={[rdStyles.addBtn, { backgroundColor: theme.colors.primary, width: 80 }]}

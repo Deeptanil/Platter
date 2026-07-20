@@ -1057,7 +1057,7 @@ export const CartScreen = ({ navigation }) => {
     const { theme } = useAppTheme();
     const isDark = theme.dark;
     const { cart, cartTotal, addToCart, removeFromCart, clearCart } = useCart();
-    const { selectedAddress } = useUser();
+    const { selectedAddress, addAddress, deleteAddress } = useUser();
 
     // ── Interaction States ───────────────────────────────────────────────────
     const [note, setNote] = React.useState('');
@@ -1065,6 +1065,28 @@ export const CartScreen = ({ navigation }) => {
     const [goldApplied, setGoldApplied] = React.useState(false);
     const [couponApplied, setCouponApplied] = React.useState(false);
     const [donation, setDonation] = React.useState(0); // 0, 5, 10, 15
+    const [deliveryTip, setDeliveryTip] = React.useState(0); // 0, 20, 30, 50
+
+    // ── Modal States ─────────────────────────────────────────────────────────
+    const [scheduleVisible, setScheduleVisible] = React.useState(false);
+    const [selectedDayIndex, setSelectedDayIndex] = React.useState(0);
+    const [selectedTimeSlot, setSelectedTimeSlot] = React.useState('11:00 AM – 11:30 AM');
+    const [scheduledDateTime, setScheduledDateTime] = React.useState(''); // e.g. "Tomorrow, 11 - 11:30 AM"
+
+    const [addressVisible, setAddressVisible] = React.useState(false);
+    const [addressOptionsVisible, setAddressOptionsVisible] = React.useState(false);
+    const [targetAddress, setTargetAddress] = React.useState(null);
+
+    const [billSummaryVisible, setBillSummaryVisible] = React.useState(false);
+
+    // Mock/Saved Addresses
+    const [savedAddresses, setSavedAddresses] = React.useState([
+        { id: 'addr_1', type: 'Home', line1: 'C2-306, Kaikondrahalli, Bengaluru', line2: 'Bengaluru, Karnataka', phone: '+91-7760343724', distance: '0 m', delivers: true },
+        { id: 'addr_2', type: 'Shobha', line1: '4041, 4th Floor, 4th Wing, Sobha Valley View, V Legacy Road', line2: 'Banashankari 3rd Stage, Hosakerehalli, Bengaluru', phone: '+91-7760343724', distance: '16.5 km', delivers: false },
+        { id: 'addr_3', type: 'Shobha gate', line1: 'Main gate, Aditya Layout, Rajarajeshwari Nagar', line2: 'Bengaluru, Karnataka', phone: '+91-7760343724', distance: '16.6 km', delivers: false },
+        { id: 'addr_4', type: 'PG', line1: '305, 3 Floor, K K Comforts Boarding And Lodging', line2: 'Bagalur Main Rd, BSF Campus, Kattigenahalli, Bengaluru', phone: '+91-7760343724', distance: '24 km', delivers: false },
+    ]);
+    const [activeAddressObj, setActiveAddressObj] = React.useState(savedAddresses[0]);
 
     // Get the first restaurant in the cart (to query contextual add-ons)
     const activeRestaurantName = cart.length > 0 ? cart[0].restaurantName : '';
@@ -1080,18 +1102,24 @@ export const CartScreen = ({ navigation }) => {
 
     // ── Bill Calculations ────────────────────────────────────────────────────
     const itemsSubtotal = cartTotal;
+    const packagingCharges = cart.length > 0 ? 20 : 0;
     const deliveryFee = goldApplied ? 0 : 45;
-    const taxesAndCharges = cart.length > 0 ? 32.68 : 0;
+    const platformFee = cart.length > 0 ? 14.90 : 0;
+    const taxesAndCharges = cart.length > 0 ? 26.78 : 0;
     const discount = couponApplied ? 60 : 0;
-    const grandTotal = Math.max(0, itemsSubtotal + deliveryFee + taxesAndCharges + donation - discount);
+    const grandTotal = Math.max(0, itemsSubtotal + packagingCharges + deliveryFee + platformFee + taxesAndCharges + donation + deliveryTip - discount);
 
     const handlePlaceOrder = () => {
         if (cart.length === 0) return;
-        // Trigger haptics
         triggerHaptic();
-        // Clear cart and navigate to OrderConfirmation
         clearCart();
         navigation.navigate('OrderConfirmation');
+    };
+
+    const handleConfirmSchedule = () => {
+        const days = ['Tomorrow', 'Wednesday', 'Thursday'];
+        setScheduledDateTime(`${days[selectedDayIndex]}, ${selectedTimeSlot}`);
+        setScheduleVisible(false);
     };
 
     if (cart.length === 0) {
@@ -1277,55 +1305,57 @@ export const CartScreen = ({ navigation }) => {
                 {/* 5. Delivery Details Metadata */}
                 <View style={[cartStyles.card, { backgroundColor: isDark ? '#1C1A30' : '#FFFFFF', borderColor: isDark ? '#2D2A4A' : '#EBE6FF' }]}>
                     {/* Time */}
-                    <View style={cartStyles.metaRow}>
+                    <TouchableOpacity onPress={() => { triggerHaptic(); setScheduleVisible(true); }} style={cartStyles.metaRow}>
                         <MaterialCommunityIcons name="clock-outline" size={20} color={theme.colors.onSurfaceVariant} />
                         <View style={{ flex: 1, marginLeft: 12 }}>
-                            <RNText style={[cartStyles.metaTitle, { color: theme.colors.onSurface }]}>Delivery in 10-15 mins</RNText>
+                            <RNText style={[cartStyles.metaTitle, { color: theme.colors.onSurface }]}>
+                                {scheduledDateTime ? `Scheduled: ${scheduledDateTime}` : 'Delivery in 15-20 mins'}
+                            </RNText>
                             <RNText style={[cartStyles.metaSub, { color: '#E03E52' }]}>Want this later? Schedule it</RNText>
                         </View>
-                    </View>
+                    </TouchableOpacity>
 
                     <View style={[cartStyles.metaDivider, { backgroundColor: isDark ? '#2D2A4A' : '#EBE6FF' }]} />
 
                     {/* Address */}
-                    <View style={cartStyles.metaRow}>
+                    <TouchableOpacity onPress={() => { triggerHaptic(); setAddressVisible(true); }} style={cartStyles.metaRow}>
                         <MaterialCommunityIcons name="map-marker-outline" size={20} color={theme.colors.onSurfaceVariant} />
                         <View style={{ flex: 1, marginLeft: 12 }}>
                             <RNText style={[cartStyles.metaTitle, { color: theme.colors.onSurface }]}>
-                                Delivery at {selectedAddress?.type || 'Home'}
+                                Delivery at {activeAddressObj.type}
                             </RNText>
                             <RNText style={[cartStyles.metaDesc, { color: theme.colors.onSurfaceVariant }]} numberOfLines={1}>
-                                {selectedAddress ? `${selectedAddress.line1}, ${selectedAddress.line2}` : 'Kaikondrahalli, Bengaluru'}
+                                {activeAddressObj.line1}, {activeAddressObj.line2}
                             </RNText>
                             <RNText style={[cartStyles.metaSub, { color: '#6C3BF5' }]}>Add instructions for delivery partner</RNText>
                         </View>
                         <MaterialCommunityIcons name="chevron-right" size={20} color={theme.colors.onSurfaceVariant} />
-                    </View>
+                    </TouchableOpacity>
 
                     <View style={[cartStyles.metaDivider, { backgroundColor: isDark ? '#2D2A4A' : '#EBE6FF' }]} />
 
                     {/* Contact Person */}
-                    <View style={cartStyles.metaRow}>
+                    <TouchableOpacity onPress={() => { triggerHaptic(); setAddressVisible(true); }} style={cartStyles.metaRow}>
                         <MaterialCommunityIcons name="phone-outline" size={20} color={theme.colors.onSurfaceVariant} />
                         <View style={{ flex: 1, marginLeft: 12 }}>
                             <RNText style={[cartStyles.metaTitle, { color: theme.colors.onSurface }]}>
-                                {selectedAddress?.line1 ? 'Recipient Details' : 'Deeptanil Sinha, +91-7760343724'}
+                                Deeptanil Sinha, {activeAddressObj.phone}
                             </RNText>
                         </View>
                         <MaterialCommunityIcons name="chevron-right" size={20} color={theme.colors.onSurfaceVariant} />
-                    </View>
+                    </TouchableOpacity>
 
                     <View style={[cartStyles.metaDivider, { backgroundColor: isDark ? '#2D2A4A' : '#EBE6FF' }]} />
 
                     {/* Total Bill breakdown link */}
-                    <View style={cartStyles.metaRow}>
+                    <TouchableOpacity onPress={() => { triggerHaptic(); setBillSummaryVisible(true); }} style={cartStyles.metaRow}>
                         <MaterialCommunityIcons name="file-document-outline" size={20} color={theme.colors.onSurfaceVariant} />
                         <View style={{ flex: 1, marginLeft: 12 }}>
                             <RNText style={[cartStyles.metaTitle, { color: theme.colors.onSurface }]}>Total Bill ₹{grandTotal.toFixed(2)}</RNText>
                             <RNText style={[cartStyles.metaDesc, { color: theme.colors.onSurfaceVariant }]}>Incl. taxes and charges</RNText>
                         </View>
                         <MaterialCommunityIcons name="chevron-right" size={20} color={theme.colors.onSurfaceVariant} />
-                    </View>
+                    </TouchableOpacity>
                 </View>
 
                 {/* 6. Join us at Feeding India */}
@@ -1416,6 +1446,334 @@ export const CartScreen = ({ navigation }) => {
                     </View>
                 </TouchableOpacity>
             </View>
+
+            {/* ── INTERACTIVE BOTTOM SHEETS ────────────────────────────────────────── */}
+            
+            {/* A. Schedule Modal */}
+            <Modal visible={scheduleVisible} transparent animationType="slide" onRequestClose={() => setScheduleVisible(false)}>
+                <View style={cartStyles.modalOverlay}>
+                    <Pressable style={StyleSheet.absoluteFill} onPress={() => setScheduleVisible(false)} />
+                    
+                    {/* Floating circular Close button above the sheet */}
+                    <TouchableOpacity onPress={() => setScheduleVisible(false)} style={cartStyles.roundCloseBtn}>
+                        <MaterialCommunityIcons name="close" size={22} color="#FFF" />
+                    </TouchableOpacity>
+
+                    <View style={[cartStyles.sheetContent, { backgroundColor: isDark ? '#1C1A30' : '#FFFFFF' }]}>
+                        <RNText style={[cartStyles.sheetTitle, { color: theme.colors.onSurface }]}>Select your delivery time</RNText>
+                        
+                        {/* Day Tabs */}
+                        <View style={cartStyles.dayTabsRow}>
+                            {['Tomorrow', 'Wednesday', 'Thursday'].map((day, idx) => {
+                                const dateLabels = ['21 Jul', '22 Jul', '23 Jul'];
+                                const active = selectedDayIndex === idx;
+                                return (
+                                    <TouchableOpacity 
+                                        key={day} 
+                                        onPress={() => setSelectedDayIndex(idx)} 
+                                        style={[cartStyles.dayTab, active && cartStyles.dayTabActive]}
+                                    >
+                                        <RNText style={[cartStyles.dayTabDate, { color: active ? '#E03E52' : theme.colors.onSurface }]}>{dateLabels[idx]}</RNText>
+                                        <RNText style={[cartStyles.dayTabDay, { color: active ? '#E03E52' : theme.colors.onSurfaceVariant }]}>{day}</RNText>
+                                    </TouchableOpacity>
+                                );
+                            })}
+                        </View>
+
+                        {/* Scrollable Time Slots */}
+                        <View style={{ height: 160, marginVertical: 16 }}>
+                            <ScrollView showsVerticalScrollIndicator={false}>
+                                {['11:00 AM – 11:30 AM', '11:30 AM – 12:00 PM', '12:00 PM – 12:30 PM', '12:30 PM – 1:00 PM', '1:00 PM – 1:30 PM'].map(slot => {
+                                    const active = selectedTimeSlot === slot;
+                                    return (
+                                        <TouchableOpacity 
+                                            key={slot} 
+                                            onPress={() => setSelectedTimeSlot(slot)}
+                                            style={[cartStyles.timeSlotRow, active && { backgroundColor: isDark ? '#2D2845' : '#EDE8FF' }]}
+                                        >
+                                            <RNText style={[cartStyles.timeSlotText, { color: active ? '#6C3BF5' : theme.colors.onSurface, fontWeight: active ? '700' : '500' }]}>{slot}</RNText>
+                                            {active && <MaterialCommunityIcons name="check-circle" size={18} color="#6C3BF5" />}
+                                        </TouchableOpacity>
+                                    );
+                                })}
+                            </ScrollView>
+                        </View>
+
+                        {/* Confirm Button */}
+                        <TouchableOpacity onPress={handleConfirmSchedule} style={cartStyles.confirmBtn}>
+                            <RNText style={cartStyles.confirmBtnText}>Confirm</RNText>
+                        </TouchableOpacity>
+                    </View>
+                </View>
+            </Modal>
+
+            {/* B. Address Select Modal */}
+            <Modal visible={addressVisible} transparent animationType="slide" onRequestClose={() => setAddressVisible(false)}>
+                <View style={cartStyles.modalOverlay}>
+                    <Pressable style={StyleSheet.absoluteFill} onPress={() => setAddressVisible(false)} />
+                    
+                    <TouchableOpacity onPress={() => setAddressVisible(false)} style={cartStyles.roundCloseBtn}>
+                        <MaterialCommunityIcons name="close" size={22} color="#FFF" />
+                    </TouchableOpacity>
+
+                    <View style={[cartStyles.sheetContent, { backgroundColor: isDark ? '#1C1A30' : '#FFFFFF', paddingBottom: 24 }]}>
+                        <RNText style={[cartStyles.sheetTitle, { color: theme.colors.onSurface }]}>Select an address</RNText>
+
+                        {/* Buttons: Add Address & Blinkit */}
+                        <TouchableOpacity 
+                            onPress={() => {
+                                triggerHaptic();
+                                // Quick add address mock
+                                const newAddr = {
+                                    id: `addr_${Date.now()}`,
+                                    type: 'Office',
+                                    line1: 'B-402, Signature Towers, BKC',
+                                    line2: 'Mumbai, Maharashtra',
+                                    phone: '+91-7760343724',
+                                    distance: '2.5 km',
+                                    delivers: true
+                                };
+                                setSavedAddresses([newAddr, ...savedAddresses]);
+                            }}
+                            style={cartStyles.sheetActionRow}
+                        >
+                            <MaterialCommunityIcons name="plus" size={20} color="#E03E52" />
+                            <RNText style={cartStyles.sheetActionText}>Add Address</RNText>
+                        </TouchableOpacity>
+
+                        <TouchableOpacity onPress={() => triggerHaptic()} style={cartStyles.sheetActionRow}>
+                            <View style={cartStyles.blinkitBadge}>
+                                <RNText style={cartStyles.blinkitBadgeText}>b</RNText>
+                            </View>
+                            <RNText style={[cartStyles.sheetActionText, { color: '#E03E52' }]}>Import addresses from Blinkit</RNText>
+                        </TouchableOpacity>
+
+                        <RNText style={cartStyles.savedAddressesHeader}>SAVED ADDRESSES</RNText>
+
+                        {/* Addresses list */}
+                        <View style={{ height: 260 }}>
+                            <ScrollView showsVerticalScrollIndicator={false}>
+                                {/* DELIVERS TO SECTION */}
+                                <RNText style={cartStyles.addressSectionTitle}>DELIVERS TO</RNText>
+                                {savedAddresses.filter(a => a.delivers).map(addr => (
+                                    <TouchableOpacity 
+                                        key={addr.id} 
+                                        onPress={() => {
+                                            setActiveAddressObj(addr);
+                                            setAddressVisible(false);
+                                        }}
+                                        style={[cartStyles.addressItemCard, { backgroundColor: isDark ? '#24223A' : '#F9F8FF' }]}
+                                    >
+                                        <MaterialCommunityIcons name="home-outline" size={22} color="#6C3BF5" />
+                                        <View style={{ flex: 1, marginLeft: 12, marginRight: 8 }}>
+                                            <RNText style={[cartStyles.addressItemType, { color: theme.colors.onSurface }]}>{addr.type}</RNText>
+                                            <RNText style={[cartStyles.addressItemDesc, { color: theme.colors.onSurfaceVariant }]}>{addr.line1}</RNText>
+                                            <RNText style={[cartStyles.addressItemPhone, { color: theme.colors.onSurfaceVariant }]}>Phone number: {addr.phone}</RNText>
+                                        </View>
+                                        <View style={{ alignItems: 'flex-end', justifyContent: 'space-between', height: '100%' }}>
+                                            <RNText style={cartStyles.addressItemDist}>{addr.distance}</RNText>
+                                            <TouchableOpacity 
+                                                onPress={() => { setTargetAddress(addr); setAddressOptionsVisible(true); }}
+                                                style={{ padding: 4 }}
+                                            >
+                                                <MaterialCommunityIcons name="dots-horizontal" size={20} color={theme.colors.onSurfaceVariant} />
+                                            </TouchableOpacity>
+                                        </View>
+                                    </TouchableOpacity>
+                                ))}
+
+                                {/* DOES NOT DELIVER TO SECTION */}
+                                <RNText style={[cartStyles.addressSectionTitle, { marginTop: 12 }]}>DOES NOT DELIVER TO</RNText>
+                                {savedAddresses.filter(a => !a.delivers).map(addr => (
+                                    <View 
+                                        key={addr.id} 
+                                        style={[cartStyles.addressItemCard, { backgroundColor: isDark ? '#24223A' : '#F9F8FF', opacity: 0.6 }]}
+                                    >
+                                        <MaterialCommunityIcons name="map-marker-outline" size={22} color="#888" />
+                                        <View style={{ flex: 1, marginLeft: 12, marginRight: 8 }}>
+                                            <RNText style={[cartStyles.addressItemType, { color: theme.colors.onSurface }]}>{addr.type}</RNText>
+                                            <RNText style={[cartStyles.addressItemDesc, { color: theme.colors.onSurfaceVariant }]}>{addr.line1}</RNText>
+                                            <RNText style={[cartStyles.addressItemPhone, { color: theme.colors.onSurfaceVariant }]}>Phone number: {addr.phone}</RNText>
+                                        </View>
+                                        <View style={{ alignItems: 'flex-end', justifyContent: 'space-between', height: '100%' }}>
+                                            <RNText style={cartStyles.addressItemDist}>{addr.distance}</RNText>
+                                            <TouchableOpacity 
+                                                onPress={() => { setTargetAddress(addr); setAddressOptionsVisible(true); }}
+                                                style={{ padding: 4 }}
+                                            >
+                                                <MaterialCommunityIcons name="dots-horizontal" size={20} color={theme.colors.onSurfaceVariant} />
+                                            </TouchableOpacity>
+                                        </View>
+                                    </View>
+                                ))}
+                            </ScrollView>
+                        </View>
+                    </View>
+                </View>
+            </Modal>
+
+            {/* C. Address Options Modal */}
+            <Modal visible={addressOptionsVisible} transparent animationType="slide" onRequestClose={() => setAddressOptionsVisible(false)}>
+                <View style={cartStyles.modalOverlay}>
+                    <Pressable style={StyleSheet.absoluteFill} onPress={() => setAddressOptionsVisible(false)} />
+                    
+                    <TouchableOpacity onPress={() => setAddressOptionsVisible(false)} style={cartStyles.roundCloseBtn}>
+                        <MaterialCommunityIcons name="close" size={22} color="#FFF" />
+                    </TouchableOpacity>
+
+                    <View style={[cartStyles.sheetContent, { backgroundColor: isDark ? '#1C1A30' : '#FFFFFF', paddingBottom: 24 }]}>
+                        <RNText style={[cartStyles.sheetTitle, { color: theme.colors.onSurface }]}>Address options</RNText>
+                        
+                        <TouchableOpacity 
+                            onPress={() => {
+                                triggerHaptic();
+                                setAddressOptionsVisible(false);
+                            }}
+                            style={cartStyles.optionItemRow}
+                        >
+                            <MaterialCommunityIcons name="pencil-outline" size={20} color={theme.colors.onSurface} />
+                            <RNText style={[cartStyles.optionItemText, { color: theme.colors.onSurface }]}>Edit Address</RNText>
+                        </TouchableOpacity>
+
+                        <TouchableOpacity 
+                            onPress={() => {
+                                triggerHaptic();
+                                if (targetAddress) {
+                                    setSavedAddresses(prev => prev.filter(a => a.id !== targetAddress.id));
+                                }
+                                setAddressOptionsVisible(false);
+                            }}
+                            style={cartStyles.optionItemRow}
+                        >
+                            <MaterialCommunityIcons name="trash-can-outline" size={20} color="#EF4444" />
+                            <RNText style={[cartStyles.optionItemText, { color: '#EF4444' }]}>Delete Address</RNText>
+                        </TouchableOpacity>
+                    </View>
+                </View>
+            </Modal>
+
+            {/* D. Bill Summary Detailed Modal */}
+            <Modal visible={billSummaryVisible} transparent animationType="slide" onRequestClose={() => setBillSummaryVisible(false)}>
+                <View style={cartStyles.modalOverlay}>
+                    <Pressable style={StyleSheet.absoluteFill} onPress={() => setBillSummaryVisible(false)} />
+                    
+                    <TouchableOpacity onPress={() => setBillSummaryVisible(false)} style={cartStyles.roundCloseBtn}>
+                        <MaterialCommunityIcons name="close" size={22} color="#FFF" />
+                    </TouchableOpacity>
+
+                    <View style={[cartStyles.sheetContent, { backgroundColor: isDark ? '#1C1A30' : '#FFFFFF', paddingBottom: 24 }]}>
+                        <RNText style={[cartStyles.sheetTitle, { color: theme.colors.onSurface, marginBottom: 16 }]}>Bill Summary</RNText>
+
+                        {/* Bill Items */}
+                        <View style={cartStyles.summaryRow}>
+                            <RNText style={[cartStyles.summaryLabel, { color: theme.colors.onSurface }]}>Item total</RNText>
+                            <RNText style={[cartStyles.summaryValue, { color: theme.colors.onSurface }]}>₹{itemsSubtotal}</RNText>
+                        </View>
+
+                        <View style={cartStyles.summaryRow}>
+                            <View style={{ flex: 1 }}>
+                                <RNText style={[cartStyles.summaryLabel, { color: theme.colors.onSurface }]}>Restaurant packaging charges</RNText>
+                                <RNText style={cartStyles.summarySubLabel}>This is decided & charged by the restaurant</RNText>
+                            </View>
+                            <RNText style={[cartStyles.summaryValue, { color: theme.colors.onSurface }]}>₹{packagingCharges}</RNText>
+                        </View>
+
+                        <View style={cartStyles.summaryRow}>
+                            <View style={{ flex: 1 }}>
+                                <RNText style={[cartStyles.summaryLabel, { color: theme.colors.onSurface }]}>Delivery partner fee for 1.3 km</RNText>
+                                <RNText style={cartStyles.summarySubLabel}>Goes to them for their time and effort</RNText>
+                            </View>
+                            <RNText style={[cartStyles.summaryValue, { color: theme.colors.onSurface, textDecorationLine: goldApplied ? 'line-through' : 'none' }]}>
+                                ₹{deliveryFee}
+                            </RNText>
+                        </View>
+
+                        {/* Gold Inset inside Bill Summary */}
+                        {!goldApplied && (
+                            <View style={[cartStyles.billGoldInset, { backgroundColor: isDark ? '#2D2845' : '#FFFDF5', borderColor: '#D4AF37' }]}>
+                                <MaterialCommunityIcons name="star-circle" size={18} color="#D4AF37" />
+                                <RNText style={{ flex: 1, color: theme.colors.onSurface, fontSize: 11, marginLeft: 6 }}>
+                                    Save ₹45 with free delivery. Add Gold at ₹1 for 3 months
+                                </RNText>
+                                <TouchableOpacity onPress={() => { triggerHaptic(); setGoldApplied(true); }} style={cartStyles.billGoldAddBtn}>
+                                    <RNText style={cartStyles.billGoldAddText}>Add Gold</RNText>
+                                </TouchableOpacity>
+                            </View>
+                        )}
+
+                        <View style={cartStyles.summaryRow}>
+                            <RNText style={[cartStyles.summaryLabel, { color: theme.colors.onSurface }]}>Platform fee</RNText>
+                            <RNText style={[cartStyles.summaryValue, { color: theme.colors.onSurface }]}>₹{platformFee.toFixed(2)}</RNText>
+                        </View>
+
+                        <View style={cartStyles.summaryRow}>
+                            <RNText style={[cartStyles.summaryLabel, { color: theme.colors.onSurface }]}>GST (govt. taxes)</RNText>
+                            <RNText style={[cartStyles.summaryValue, { color: theme.colors.onSurface }]}>₹{taxesAndCharges.toFixed(2)}</RNText>
+                        </View>
+
+                        {couponApplied && (
+                            <View style={cartStyles.summaryRow}>
+                                <RNText style={[cartStyles.summaryLabel, { color: '#22C55E', fontWeight: '700' }]}>Promo Discount</RNText>
+                                <RNText style={[cartStyles.summaryValue, { color: '#22C55E', fontWeight: '700' }]}>-₹60.00</RNText>
+                            </View>
+                        )}
+
+                        {donation > 0 && (
+                            <View style={cartStyles.summaryRow}>
+                                <RNText style={[cartStyles.summaryLabel, { color: theme.colors.onSurface }]}>Feeding India Donation</RNText>
+                                <RNText style={[cartStyles.summaryValue, { color: theme.colors.onSurface }]}>₹{donation}</RNText>
+                            </View>
+                        )}
+
+                        {deliveryTip > 0 && (
+                            <View style={cartStyles.summaryRow}>
+                                <RNText style={[cartStyles.summaryLabel, { color: theme.colors.onSurface }]}>Delivery Partner Tip</RNText>
+                                <RNText style={[cartStyles.summaryValue, { color: theme.colors.onSurface }]}>₹{deliveryTip}</RNText>
+                            </View>
+                        )}
+
+                        <View style={[cartStyles.divider, { backgroundColor: isDark ? '#2D2A4A' : '#EBE6FF', marginVertical: 12 }]} />
+
+                        <View style={cartStyles.summaryRow}>
+                            <RNText style={{ fontSize: 16, fontWeight: '800', color: theme.colors.onSurface }}>To pay</RNText>
+                            <RNText style={{ fontSize: 16, fontWeight: '800', color: theme.colors.onSurface }}>₹{grandTotal.toFixed(2)}</RNText>
+                        </View>
+
+                        {/* Gratitude Corner Tip Row */}
+                        <RNText style={cartStyles.gratitudeCornerHeader}>GRATITUDE CORNER</RNText>
+                        <RNText style={[cartStyles.gratitudeCornerDesc, { color: theme.colors.onSurfaceVariant }]}>
+                            Tip your delivery partner. They'll get notified instantly. The full tip is sent after delivery
+                        </RNText>
+                        <View style={[cartStyles.donationRow, { marginTop: 12 }]}>
+                            {[20, 30, 50].map(tip => (
+                                <TouchableOpacity 
+                                    key={tip} 
+                                    onPress={() => { triggerHaptic(); setDeliveryTip(deliveryTip === tip ? 0 : tip); }}
+                                    style={[
+                                        cartStyles.donatePill, 
+                                        { 
+                                            backgroundColor: deliveryTip === tip ? '#6C3BF5' : (isDark ? '#2D2845' : '#EDE8FF')
+                                        }
+                                    ]}
+                                >
+                                    <RNText style={[cartStyles.donatePillText, { color: deliveryTip === tip ? '#FFF' : theme.colors.onSurface }]}>₹{tip}</RNText>
+                                </TouchableOpacity>
+                            ))}
+                            <TouchableOpacity 
+                                onPress={() => { triggerHaptic(); setDeliveryTip(deliveryTip === 100 ? 0 : 100); }}
+                                style={[
+                                    cartStyles.donatePill, 
+                                    { 
+                                        backgroundColor: deliveryTip === 100 ? '#6C3BF5' : (isDark ? '#2D2845' : '#EDE8FF') 
+                                    }
+                                ]}
+                            >
+                                <RNText style={[cartStyles.donatePillText, { color: deliveryTip === 100 ? '#FFF' : theme.colors.onSurface }]}>Other</RNText>
+                            </TouchableOpacity>
+                        </View>
+                    </View>
+                </View>
+            </Modal>
         </AppBackground>
     );
 };
@@ -2644,6 +3002,213 @@ const cartStyles = StyleSheet.create({
         color: '#FFF',
         fontSize: 14,
         fontWeight: '800',
+    },
+    modalOverlay: {
+        flex: 1,
+        backgroundColor: 'rgba(0,0,0,0.6)',
+        justifyContent: 'flex-end',
+    },
+    roundCloseBtn: {
+        width: 44,
+        height: 44,
+        borderRadius: 22,
+        backgroundColor: 'rgba(0,0,0,0.7)',
+        justifyContent: 'center',
+        alignItems: 'center',
+        alignSelf: 'center',
+        marginBottom: 12,
+    },
+    sheetContent: {
+        borderTopLeftRadius: 24,
+        borderTopRightRadius: 24,
+        padding: 20,
+        maxHeight: '85%',
+    },
+    sheetTitle: {
+        fontSize: 18,
+        fontWeight: '800',
+        marginBottom: 16,
+    },
+    dayTabsRow: {
+        flexDirection: 'row',
+        gap: 12,
+        borderBottomWidth: 1,
+        borderBottomColor: 'rgba(108,59,245,0.08)',
+        paddingBottom: 8,
+    },
+    dayTab: {
+        flex: 1,
+        alignItems: 'center',
+        paddingVertical: 8,
+        borderRadius: 12,
+    },
+    dayTabActive: {
+        backgroundColor: 'rgba(224,62,82,0.06)',
+        borderWidth: 1,
+        borderColor: 'rgba(224,62,82,0.2)',
+    },
+    dayTabDate: {
+        fontSize: 14,
+        fontWeight: '800',
+    },
+    dayTabDay: {
+        fontSize: 11,
+        marginTop: 2,
+    },
+    timeSlotRow: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        justifyContent: 'space-between',
+        paddingVertical: 14,
+        paddingHorizontal: 12,
+        borderRadius: 12,
+        marginVertical: 4,
+    },
+    timeSlotText: {
+        fontSize: 14,
+    },
+    confirmBtn: {
+        backgroundColor: '#E03E52',
+        height: 48,
+        borderRadius: 14,
+        justifyContent: 'center',
+        alignItems: 'center',
+        marginTop: 8,
+    },
+    confirmBtnText: {
+        color: '#FFF',
+        fontSize: 16,
+        fontWeight: '800',
+    },
+    sheetActionRow: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        paddingVertical: 14,
+        borderBottomWidth: 1,
+        borderBottomColor: 'rgba(108,59,245,0.06)',
+    },
+    sheetActionText: {
+        fontSize: 14,
+        fontWeight: '700',
+        color: '#E03E52',
+        marginLeft: 12,
+    },
+    blinkitBadge: {
+        width: 22,
+        height: 22,
+        backgroundColor: '#FDE047',
+        borderRadius: 6,
+        justifyContent: 'center',
+        alignItems: 'center',
+    },
+    blinkitBadgeText: {
+        color: '#000',
+        fontSize: 12,
+        fontWeight: '900',
+    },
+    savedAddressesHeader: {
+        fontSize: 11,
+        fontWeight: '800',
+        letterSpacing: 0.5,
+        color: '#888',
+        marginTop: 18,
+        marginBottom: 8,
+    },
+    addressSectionTitle: {
+        fontSize: 10,
+        fontWeight: '800',
+        letterSpacing: 0.5,
+        color: '#888',
+        marginVertical: 6,
+    },
+    addressItemCard: {
+        flexDirection: 'row',
+        alignItems: 'flex-start',
+        padding: 14,
+        borderRadius: 16,
+        marginVertical: 6,
+    },
+    addressItemType: {
+        fontSize: 14,
+        fontWeight: '700',
+    },
+    addressItemDesc: {
+        fontSize: 12,
+        marginTop: 4,
+        lineHeight: 16,
+    },
+    addressItemPhone: {
+        fontSize: 11,
+        marginTop: 4,
+    },
+    addressItemDist: {
+        fontSize: 11,
+        fontWeight: '700',
+        color: '#888',
+    },
+    optionItemRow: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        paddingVertical: 16,
+        borderBottomWidth: 1,
+        borderBottomColor: 'rgba(108,59,245,0.06)',
+    },
+    optionItemText: {
+        fontSize: 15,
+        fontWeight: '700',
+        marginLeft: 14,
+    },
+    summaryRow: {
+        flexDirection: 'row',
+        justifyContent: 'space-between',
+        alignItems: 'flex-start',
+        paddingVertical: 10,
+    },
+    summaryLabel: {
+        fontSize: 13,
+        fontWeight: '500',
+        flex: 1,
+        paddingRight: 16,
+    },
+    summarySubLabel: {
+        fontSize: 10,
+        color: '#888',
+        marginTop: 2,
+    },
+    summaryValue: {
+        fontSize: 13,
+        fontWeight: '600',
+    },
+    billGoldInset: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        padding: 10,
+        borderRadius: 12,
+        borderWidth: 1,
+        marginVertical: 8,
+    },
+    billGoldAddBtn: {
+        backgroundColor: '#D4AF37',
+        paddingHorizontal: 10,
+        paddingVertical: 6,
+        borderRadius: 8,
+    },
+    billGoldAddText: {
+        color: '#000',
+        fontSize: 10,
+        fontWeight: '800',
+    },
+    gratitudeCornerHeader: {
+        fontSize: 11,
+        fontWeight: '800',
+        letterSpacing: 0.5,
+        color: '#888',
+        marginTop: 20,
+    },
+    gratitudeCornerDesc: {
+        fontSize: 11,
+        marginTop: 4,
+        lineHeight: 16,
     },
 });
 

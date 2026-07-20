@@ -10,6 +10,9 @@ import { BlurView } from 'expo-blur';
 import { LinearGradient } from 'expo-linear-gradient';
 
 import { useAppTheme, useUser } from './context';
+
+// Named loading placeholder — fixes React Navigation inline-function warning
+const LoadingScreen = () => <View style={{ flex: 1 }} />;
 import {
     AuthScreen, HomeScreen, RestaurantDetailsScreen, CartScreen,
     MyCollectionsScreen, SettingsScreen, CheckoutScreen,
@@ -154,7 +157,7 @@ export default function RootNavigator() {
                 <NavigationContainer theme={navTheme}>
                     <Stack.Navigator screenOptions={{ contentStyle: { backgroundColor: 'transparent' } }}>
                         {user === undefined ? (
-                            <Stack.Screen name="Loading" component={() => <View />} options={{ headerShown: false }} />
+                            <Stack.Screen name="Loading" component={LoadingScreen} options={{ headerShown: false }} />
                         ) : user ? (
                             <Stack.Screen name="MainApp" component={MainAppStack} options={{ headerShown: false }} />
                         ) : (

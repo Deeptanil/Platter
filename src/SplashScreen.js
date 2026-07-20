@@ -8,10 +8,14 @@ import {
     StatusBar,
 } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
+import { useAppTheme } from './context';
 
 const { width: SW, height: SH } = Dimensions.get('window');
 
 export default function SplashScreen({ onFinish }) {
+    const { theme } = useAppTheme();
+    const isDark = theme.dark;
+
     // ── Animation values ─────────────────────────────────────────────────────
     const logoOpacity   = useRef(new Animated.Value(0)).current;
     const logoScale     = useRef(new Animated.Value(0.72)).current;
@@ -100,12 +104,12 @@ export default function SplashScreen({ onFinish }) {
     }, []);
 
     return (
-        <Animated.View style={[styles.root, { opacity: screenOpacity }]}>
-            <StatusBar barStyle="light-content" backgroundColor="#2D0A72" />
+        <Animated.View style={[styles.root, { opacity: screenOpacity, backgroundColor: theme.colors.background }]}>
+            <StatusBar barStyle={isDark ? 'light-content' : 'dark-content'} backgroundColor={theme.colors.background} />
 
-            {/* Background gradient — deep purple → rich violet */}
+            {/* Background gradient — dynamic purple modes */}
             <LinearGradient
-                colors={['#1A0050', '#2D0A72', '#3B0D8A']}
+                colors={isDark ? ['#0D0B1E', '#1A1730', '#251F45'] : ['#FFFFFF', '#F5F3FF', '#EDE8FF']}
                 locations={[0, 0.55, 1]}
                 style={StyleSheet.absoluteFill}
             />
@@ -115,6 +119,8 @@ export default function SplashScreen({ onFinish }) {
                 style={[
                     styles.glow,
                     {
+                        backgroundColor: isDark ? '#7C3AED' : '#C9B8FF',
+                        shadowColor: isDark ? '#8B5CF6' : '#9D7BFF',
                         opacity: glowOpacity,
                         transform: [{ scale: glowScale }],
                     },
@@ -128,6 +134,8 @@ export default function SplashScreen({ onFinish }) {
                     style={[
                         styles.wordmark,
                         {
+                            color: isDark ? '#FFFFFF' : '#6C3BF5',
+                            textShadowColor: isDark ? 'rgba(139,92,246,0.8)' : 'rgba(108,59,245,0.25)',
                             opacity: logoOpacity,
                             transform: [{ scale: logoScale }],
                         },
@@ -146,9 +154,9 @@ export default function SplashScreen({ onFinish }) {
                     }}
                 >
                     <View style={styles.taglineDividerWrap}>
-                        <View style={styles.taglineLine} />
-                        <Text style={styles.taglineText}>discover. order. savour.</Text>
-                        <View style={styles.taglineLine} />
+                        <View style={[styles.taglineLine, { backgroundColor: isDark ? 'rgba(255,255,255,0.35)' : 'rgba(108,59,245,0.35)' }]} />
+                        <Text style={[styles.taglineText, { color: isDark ? 'rgba(255,255,255,0.55)' : '#5B4B8A' }]}>discover. order. savour.</Text>
+                        <View style={[styles.taglineLine, { backgroundColor: isDark ? 'rgba(255,255,255,0.35)' : 'rgba(108,59,245,0.35)' }]} />
                     </View>
                 </Animated.View>
             </View>
@@ -156,7 +164,7 @@ export default function SplashScreen({ onFinish }) {
             {/* Bottom loading dots */}
             <Animated.View style={[styles.dotsRow, { opacity: dotsOpacity }]}>
                 {[0, 1, 2].map(i => (
-                    <PulsingDot key={i} delay={i * 180} />
+                    <PulsingDot key={i} delay={i * 180} isDark={isDark} />
                 ))}
             </Animated.View>
         </Animated.View>
@@ -164,7 +172,7 @@ export default function SplashScreen({ onFinish }) {
 }
 
 // ── Tiny pulsing dot ──────────────────────────────────────────────────────────
-function PulsingDot({ delay }) {
+function PulsingDot({ delay, isDark }) {
     const scale = useRef(new Animated.Value(0.6)).current;
 
     useEffect(() => {
@@ -187,7 +195,7 @@ function PulsingDot({ delay }) {
 
     return (
         <Animated.View
-            style={[styles.dot, { transform: [{ scale }] }]}
+            style={[styles.dot, { transform: [{ scale }], backgroundColor: isDark ? 'rgba(255,255,255,0.5)' : 'rgba(108,59,245,0.5)' }]}
         />
     );
 }
@@ -204,9 +212,7 @@ const styles = StyleSheet.create({
         width: SW * 0.85,
         height: SW * 0.85,
         borderRadius: SW * 0.425,
-        backgroundColor: '#7C3AED',
         // soft radial effect via shadow
-        shadowColor: '#8B5CF6',
         shadowOpacity: 1,
         shadowRadius: 120,
         elevation: 20,
@@ -218,9 +224,7 @@ const styles = StyleSheet.create({
     wordmark: {
         fontFamily: 'Casko',
         fontSize: 68,
-        color: '#FFFFFF',
         letterSpacing: 6,
-        textShadowColor: 'rgba(139,92,246,0.8)',
         textShadowOffset: { width: 0, height: 0 },
         textShadowRadius: 30,
     },
@@ -232,10 +236,8 @@ const styles = StyleSheet.create({
     taglineLine: {
         width: 28,
         height: 1,
-        backgroundColor: 'rgba(255,255,255,0.35)',
     },
     taglineText: {
-        color: 'rgba(255,255,255,0.55)',
         fontSize: 11,
         letterSpacing: 2.5,
         fontWeight: '500',
@@ -252,6 +254,5 @@ const styles = StyleSheet.create({
         width: 6,
         height: 6,
         borderRadius: 3,
-        backgroundColor: 'rgba(255,255,255,0.5)',
     },
 });

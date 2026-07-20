@@ -260,17 +260,19 @@ export const RecommendedCard = ({ restaurant, theme, navigation, filterMode }) =
 };
 
 // ─── CartFAB ──────────────────────────────────────────────────────────────────
-export const CartFAB = ({ navigation }) => {
+export const CartFAB = ({ navigation, bottomOffset }) => {
     const { cart, cartTotal, cartItemCount } = useCart();
     const { theme } = useAppTheme();
 
     if (cart.length === 0) return null;
 
+    const resolvedBottom = bottomOffset !== undefined ? bottomOffset : 100;
+
     return (
         <TouchableOpacity
             onPress={() => navigation.navigate('Cart')}
             activeOpacity={0.9}
-            style={fabStyles.wrapper}
+            style={[fabStyles.wrapper, { bottom: resolvedBottom }]}
         >
             <BlurView intensity={80} tint="dark" style={fabStyles.blurPill}>
                 <LinearGradient

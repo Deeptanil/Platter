@@ -1055,69 +1055,371 @@ const CartItemCard = ({ item }) => {
 
 export const CartScreen = ({ navigation }) => {
     const { theme } = useAppTheme();
-    const { cart } = useCart();
-    
-    const cartSections = useMemo(() => {
-        const grouped = cart.reduce((acc, item) => {
-            const { restaurantName } = item;
-            if (!acc[restaurantName]) {
-                acc[restaurantName] = [];
-            }
-            acc[restaurantName].push(item);
-            return acc;
-        }, {});
+    const isDark = theme.dark;
+    const { cart, cartTotal, addToCart, removeFromCart, clearCart } = useCart();
+    const { selectedAddress } = useUser();
 
-        return Object.keys(grouped).map(key => ({
-            title: key,
-            data: grouped[key]
-        }));
-    }, [cart]);
+    // ── Interaction States ───────────────────────────────────────────────────
+    const [note, setNote] = React.useState('');
+    const [showNoteInput, setShowNoteInput] = React.useState(false);
+    const [goldApplied, setGoldApplied] = React.useState(false);
+    const [couponApplied, setCouponApplied] = React.useState(false);
+    const [donation, setDonation] = React.useState(0); // 0, 5, 10, 15
 
+    // Get the first restaurant in the cart (to query contextual add-ons)
+    const activeRestaurantName = cart.length > 0 ? cart[0].restaurantName : '';
+    const restaurantData = ALL_RESTAURANTS.find(r => r.name === activeRestaurantName) || ALL_RESTAURANTS[0];
+
+    // Mock add-ons (Belgian Chocolate Mousse, Brownie, etc.)
+    const ADD_ONS = [
+        { id: 'add_on_1', name: 'Belgian Chocolate Mousse Slice', price: 192.50, originalPrice: 250, image: 'https://images.unsplash.com/photo-1551024506-0bccd828d307?auto=format&fit=crop&w=400&q=80', isVeg: true },
+        { id: 'add_on_2', name: 'Brownie Cheesecake Slice', price: 192.50, originalPrice: 250, image: 'https://images.unsplash.com/photo-1565958011703-44f9829ba187?auto=format&fit=crop&w=400&q=80', isVeg: true },
+        { id: 'add_on_3', name: 'Chocolate Fudge Brownie', price: 91.63, originalPrice: 119, image: 'https://images.unsplash.com/photo-1546069901-ba9599a7e63c?auto=format&fit=crop&w=400&q=80', isVeg: true },
+        { id: 'add_on_4', name: 'Red Velvet Jar', price: 192.50, originalPrice: 250, image: 'https://images.unsplash.com/photo-1488477181946-6428a0291777?auto=format&fit=crop&w=400&q=80', isVeg: true },
+    ];
+
+    // ── Bill Calculations ────────────────────────────────────────────────────
+    const itemsSubtotal = cartTotal;
+    const deliveryFee = goldApplied ? 0 : 45;
+    const taxesAndCharges = cart.length > 0 ? 32.68 : 0;
+    const discount = couponApplied ? 60 : 0;
+    const grandTotal = Math.max(0, itemsSubtotal + deliveryFee + taxesAndCharges + donation - discount);
+
+    const handlePlaceOrder = () => {
+        if (cart.length === 0) return;
+        // Trigger haptics
+        triggerHaptic();
+        // Clear cart and navigate to OrderConfirmation
+        clearCart();
+        navigation.navigate('OrderConfirmation');
+    };
+
+    if (cart.length === 0) {
+        return (
+            <AppBackground>
+                <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center', paddingHorizontal: 32 }}>
+                    <MaterialCommunityIcons name="cart-off" size={80} color={theme.colors.onSurfaceVariant} />
+                    <Text variant="headlineSmall" style={{ color: theme.colors.onSurface, fontWeight: 'bold', marginTop: 16, textAlign: 'center' }}>Your cart is empty</Text>
+                    <Text variant="bodyMedium" style={{ color: theme.colors.onSurfaceVariant, marginTop: 8, textAlign: 'center' }}>Add something delicious to get started!</Text>
+                    <View style={{ marginTop: 24, width: '100%' }}>
+                        <GlassButton title="Browse Restaurants" icon="silverware-fork-knife" onPress={() => navigation.goBack()} />
+                    </View>
+                </View>
+            </AppBackground>
+        );
+    }
 
     return (
         <AppBackground>
-            <FlatList
-                data={cartSections}
-                keyExtractor={(item) => item.title}
-                ListHeaderComponent={() => cart.length > 0 ? <Text variant="headlineMedium" style={{marginHorizontal: 16, marginTop: 16, marginBottom: 24, fontWeight: 'bold', color: theme.colors.onSurface}}>Your Order</Text> : null}
-                renderItem={({item}) => {
-                    const restaurantData = ALL_RESTAURANTS.find(r => r.name === item.title);
-                    return (
-                        <GlassCard style={{ marginHorizontal: 16, padding: 16, alignItems: 'flex-start' }}>
-                            <View style={{flexDirection: 'row', alignItems: 'center', marginBottom: 12}}>
-                                {restaurantData?.image && (
-                                    <Image source={{uri: restaurantData.image}} style={{width: 40, height: 40, borderRadius: 20, marginRight: 10}} />
-                                )}
-                                <Text variant="titleLarge" style={{color: theme.colors.onSurface, flex: 1}}>{item.title}</Text>
-                            </View>
-                            {item.data.map(dish => <CartItemCard key={dish.id} item={dish} />)}
-                        </GlassCard>
-                    );
-                }}
-                ListFooterComponent={() => (
-                    <>
-                        {cart.length > 0 && (
-                            <View style={{padding: 16, marginTop: 8}}>
-                                <GlassButton title="Review Order & Address" onPress={() => navigation.navigate('Checkout')} />
-                            </View>
+            <ScrollView contentContainerStyle={{ paddingBottom: 130 }} showsVerticalScrollIndicator={false}>
+                {/* 1. Restaurant Header & Cart Items List */}
+                <View style={[cartStyles.card, { backgroundColor: isDark ? '#1C1A30' : '#FFFFFF', borderColor: isDark ? '#2D2A4A' : '#EBE6FF' }]}>
+                    <View style={cartStyles.restaurantHeader}>
+                        {restaurantData?.image && (
+                            <Image source={{ uri: restaurantData.image }} style={cartStyles.restaurantLogo} />
                         )}
-                    </>
-                )}
-                ListEmptyComponent={
-                    <View style={{alignItems: 'center', marginTop: 80, paddingHorizontal: 32}}>
-                        <MaterialCommunityIcons name="cart-off" size={80} color={theme.colors.onSurfaceVariant} />
-                        <Text variant="headlineSmall" style={{color: theme.colors.onSurface, fontWeight: 'bold', marginTop: 16, textAlign: 'center'}}>Your cart is empty</Text>
-                        <Text variant="bodyMedium" style={{color: theme.colors.onSurfaceVariant, marginTop: 8, textAlign: 'center'}}>Add something delicious from Mumbai's best spots</Text>
-                        <View style={{marginTop: 24, width: '100%'}}>
-                            <GlassButton title="Browse Restaurants" icon="silverware-fork-knife" onPress={() => navigation.goBack()} />
+                        <View style={{ flex: 1 }}>
+                            <RNText style={[cartStyles.restaurantName, { color: theme.colors.onSurface }]}>{activeRestaurantName || 'Restaurant'}</RNText>
+                            <RNText style={[cartStyles.restaurantSub, { color: theme.colors.onSurfaceVariant }]}>Mumbai</RNText>
                         </View>
                     </View>
-                }
-                contentContainerStyle={{paddingBottom: 40, flexGrow: 1}}
-            />
+
+                    {/* Items */}
+                    {cart.map((item) => (
+                        <View key={item.id} style={cartStyles.itemRow}>
+                            <View style={cartStyles.itemLeft}>
+                                <MaterialCommunityIcons 
+                                    name="circle-slice-8" 
+                                    size={16} 
+                                    color={item.isVeg ? '#22C55E' : '#EF4444'} 
+                                    style={{ marginRight: 6, marginTop: 2 }}
+                                />
+                                <View style={{ flex: 1 }}>
+                                    <RNText style={[cartStyles.itemName, { color: theme.colors.onSurface }]}>{item.name}</RNText>
+                                    <RNText style={[cartStyles.itemPrice, { color: theme.colors.onSurfaceVariant }]}>₹{item.price}</RNText>
+                                </View>
+                            </View>
+
+                            {/* Quantity Selector */}
+                            <View style={[cartStyles.qtyContainer, { backgroundColor: isDark ? '#2D2845' : '#EDE8FF' }]}>
+                                <TouchableOpacity onPress={() => removeFromCart(item)} style={cartStyles.qtyBtn}>
+                                    <MaterialCommunityIcons name="minus" size={14} color={isDark ? '#FFF' : '#6C3BF5'} />
+                                </TouchableOpacity>
+                                <RNText style={[cartStyles.qtyText, { color: theme.colors.onSurface }]}>{item.quantity}</RNText>
+                                <TouchableOpacity onPress={() => addToCart(item)} style={cartStyles.qtyBtn}>
+                                    <MaterialCommunityIcons name="plus" size={14} color={isDark ? '#FFF' : '#6C3BF5'} />
+                                </TouchableOpacity>
+                            </View>
+                        </View>
+                    ))}
+
+                    {/* Action buttons row below items */}
+                    <View style={cartStyles.actionButtonsRow}>
+                        <TouchableOpacity 
+                            onPress={() => { triggerHaptic(); navigation.navigate('RestaurantDetails', { restaurant: restaurantData }); }}
+                            style={cartStyles.actionBtn}
+                        >
+                            <MaterialCommunityIcons name="plus" size={16} color="#E03E52" />
+                            <RNText style={cartStyles.actionBtnText}>Add more items</RNText>
+                        </TouchableOpacity>
+
+                        <View style={cartStyles.actionDivider} />
+
+                        <TouchableOpacity onPress={() => setShowNoteInput(!showNoteInput)} style={cartStyles.actionBtn}>
+                            <MaterialCommunityIcons name="note-text-outline" size={16} color={theme.colors.onSurfaceVariant} />
+                            <RNText style={[cartStyles.actionBtnText, { color: theme.colors.onSurfaceVariant }]}>
+                                {note ? 'Edit note' : 'Add a note'}
+                            </RNText>
+                        </TouchableOpacity>
+                    </View>
+
+                    {/* Note Input field */}
+                    {showNoteInput && (
+                        <View style={{ paddingHorizontal: 16, paddingBottom: 16 }}>
+                            <GlassInput 
+                                label="Instruction for restaurant" 
+                                value={note} 
+                                onChangeText={setNote}
+                                placeholder="Avoid onions, make it spicy, etc." 
+                            />
+                        </View>
+                    )}
+                </View>
+
+                {/* 2. Special Prices Unlocked Carousel */}
+                <View style={[cartStyles.card, { backgroundColor: isDark ? '#1C1A30' : '#FFFFFF', borderColor: isDark ? '#2D2A4A' : '#EBE6FF' }]}>
+                    <View style={cartStyles.specialHeader}>
+                        <MaterialCommunityIcons name="rhombus-split" size={20} color="#2196F3" />
+                        <View style={{ marginLeft: 8 }}>
+                            <RNText style={[cartStyles.specialTitle, { color: theme.colors.onSurface }]}>Special prices unlocked</RNText>
+                            <RNText style={[cartStyles.specialSub, { color: theme.colors.onSurfaceVariant }]}>Add any one of these items</RNText>
+                        </View>
+                    </View>
+
+                    <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ paddingHorizontal: 16, paddingBottom: 10 }}>
+                        {ADD_ONS.map(item => (
+                            <View key={item.id} style={[cartStyles.addOnCard, { backgroundColor: isDark ? '#24223A' : '#F5F3FF' }]}>
+                                <View style={cartStyles.addOnImageWrap}>
+                                    <Image source={{ uri: item.image }} style={cartStyles.addOnImage} />
+                                    <TouchableOpacity 
+                                        onPress={() => { triggerHaptic(); addToCart({ ...item, restaurantName: activeRestaurantName }); }}
+                                        style={cartStyles.addOnAddBtn}
+                                    >
+                                        <MaterialCommunityIcons name="plus" size={16} color="#FFF" />
+                                    </TouchableOpacity>
+                                </View>
+                                <View style={{ padding: 8 }}>
+                                    <RNText style={[cartStyles.addOnName, { color: theme.colors.onSurface }]} numberOfLines={2}>{item.name}</RNText>
+                                    <View style={{ flexDirection: 'row', alignItems: 'center', marginTop: 4 }}>
+                                        <RNText style={cartStyles.addOnPrice}>₹{item.price}</RNText>
+                                        <RNText style={cartStyles.addOnOrigPrice}>₹{item.originalPrice}</RNText>
+                                    </View>
+                                </View>
+                            </View>
+                        ))}
+                    </ScrollView>
+                </View>
+
+                {/* 3. Gold & Coupon Offers */}
+                <View style={[cartStyles.card, { backgroundColor: isDark ? '#1C1A30' : '#FFFFFF', borderColor: isDark ? '#2D2A4A' : '#EBE6FF' }]}>
+                    {/* Gold Membership Offer */}
+                    <View style={cartStyles.offerRow}>
+                        <MaterialCommunityIcons name="star-circle" size={24} color="#D4AF37" />
+                        <View style={{ flex: 1, marginLeft: 12, marginRight: 8 }}>
+                            <RNText style={[cartStyles.offerTitle, { color: theme.colors.onSurface }]}>
+                                {goldApplied ? 'Gold Free Delivery applied!' : 'Save ₹45 with free delivery'}
+                            </RNText>
+                            <RNText style={[cartStyles.offerDesc, { color: theme.colors.onSurfaceVariant }]}>Add Gold at ₹1 for 3 months</RNText>
+                        </View>
+                        <TouchableOpacity 
+                            onPress={() => { triggerHaptic(); setGoldApplied(!goldApplied); }}
+                            style={[cartStyles.offerApplyBtn, { borderColor: goldApplied ? '#22C55E' : '#E03E52' }]}
+                        >
+                            <RNText style={[cartStyles.offerApplyText, { color: goldApplied ? '#22C55E' : '#E03E52' }]}>
+                                {goldApplied ? 'REMOVE' : 'APPLY'}
+                            </RNText>
+                        </TouchableOpacity>
+                    </View>
+
+                    <View style={[cartStyles.divider, { backgroundColor: isDark ? '#2D2A4A' : '#EBE6FF' }]} />
+
+                    {/* Promo Coupon Offer */}
+                    <View style={cartStyles.offerRow}>
+                        <MaterialCommunityIcons name="ticket-percent" size={24} color="#6C3BF5" />
+                        <View style={{ flex: 1, marginLeft: 12, marginRight: 8 }}>
+                            <RNText style={[cartStyles.offerTitle, { color: theme.colors.onSurface }]}>
+                                {couponApplied ? "Code 'SPECIALOFFER' Applied (Saved ₹60)" : "Save ₹60 with 'SPECIALOFFER'"}
+                            </RNText>
+                            <RNText style={[cartStyles.offerDesc, { color: theme.colors.onSurfaceVariant }]}>Add items worth ₹49 or more to unlock</RNText>
+                        </View>
+                        <TouchableOpacity 
+                            onPress={() => { triggerHaptic(); setCouponApplied(!couponApplied); }}
+                            style={[cartStyles.offerApplyBtn, { borderColor: couponApplied ? '#22C55E' : '#E03E52' }]}
+                        >
+                            <RNText style={[cartStyles.offerApplyText, { color: couponApplied ? '#22C55E' : '#E03E52' }]}>
+                                {couponApplied ? 'REMOVE' : 'APPLY'}
+                            </RNText>
+                        </TouchableOpacity>
+                    </View>
+                </View>
+
+                {/* 4. VIP Mode Section */}
+                <View style={[cartStyles.card, { backgroundColor: isDark ? '#1C1A30' : '#FFFFFF', borderColor: isDark ? '#2D2A4A' : '#EBE6FF' }]}>
+                    <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+                        <MaterialCommunityIcons name="crown-outline" size={22} color={theme.colors.onSurfaceVariant} />
+                        <View style={{ marginLeft: 12 }}>
+                            <RNText style={[cartStyles.vipTitle, { color: theme.colors.onSurface }]}>VIP Mode unavailable</RNText>
+                            <RNText style={[cartStyles.vipDesc, { color: theme.colors.onSurfaceVariant }]}>Currently unavailable at this restaurant</RNText>
+                        </View>
+                    </View>
+                </View>
+
+                {/* 5. Delivery Details Metadata */}
+                <View style={[cartStyles.card, { backgroundColor: isDark ? '#1C1A30' : '#FFFFFF', borderColor: isDark ? '#2D2A4A' : '#EBE6FF' }]}>
+                    {/* Time */}
+                    <View style={cartStyles.metaRow}>
+                        <MaterialCommunityIcons name="clock-outline" size={20} color={theme.colors.onSurfaceVariant} />
+                        <View style={{ flex: 1, marginLeft: 12 }}>
+                            <RNText style={[cartStyles.metaTitle, { color: theme.colors.onSurface }]}>Delivery in 10-15 mins</RNText>
+                            <RNText style={[cartStyles.metaSub, { color: '#E03E52' }]}>Want this later? Schedule it</RNText>
+                        </View>
+                    </View>
+
+                    <View style={[cartStyles.metaDivider, { backgroundColor: isDark ? '#2D2A4A' : '#EBE6FF' }]} />
+
+                    {/* Address */}
+                    <View style={cartStyles.metaRow}>
+                        <MaterialCommunityIcons name="map-marker-outline" size={20} color={theme.colors.onSurfaceVariant} />
+                        <View style={{ flex: 1, marginLeft: 12 }}>
+                            <RNText style={[cartStyles.metaTitle, { color: theme.colors.onSurface }]}>
+                                Delivery at {selectedAddress?.type || 'Home'}
+                            </RNText>
+                            <RNText style={[cartStyles.metaDesc, { color: theme.colors.onSurfaceVariant }]} numberOfLines={1}>
+                                {selectedAddress ? `${selectedAddress.line1}, ${selectedAddress.line2}` : 'Kaikondrahalli, Bengaluru'}
+                            </RNText>
+                            <RNText style={[cartStyles.metaSub, { color: '#6C3BF5' }]}>Add instructions for delivery partner</RNText>
+                        </View>
+                        <MaterialCommunityIcons name="chevron-right" size={20} color={theme.colors.onSurfaceVariant} />
+                    </View>
+
+                    <View style={[cartStyles.metaDivider, { backgroundColor: isDark ? '#2D2A4A' : '#EBE6FF' }]} />
+
+                    {/* Contact Person */}
+                    <View style={cartStyles.metaRow}>
+                        <MaterialCommunityIcons name="phone-outline" size={20} color={theme.colors.onSurfaceVariant} />
+                        <View style={{ flex: 1, marginLeft: 12 }}>
+                            <RNText style={[cartStyles.metaTitle, { color: theme.colors.onSurface }]}>
+                                {selectedAddress?.line1 ? 'Recipient Details' : 'Deeptanil Sinha, +91-7760343724'}
+                            </RNText>
+                        </View>
+                        <MaterialCommunityIcons name="chevron-right" size={20} color={theme.colors.onSurfaceVariant} />
+                    </View>
+
+                    <View style={[cartStyles.metaDivider, { backgroundColor: isDark ? '#2D2A4A' : '#EBE6FF' }]} />
+
+                    {/* Total Bill breakdown link */}
+                    <View style={cartStyles.metaRow}>
+                        <MaterialCommunityIcons name="file-document-outline" size={20} color={theme.colors.onSurfaceVariant} />
+                        <View style={{ flex: 1, marginLeft: 12 }}>
+                            <RNText style={[cartStyles.metaTitle, { color: theme.colors.onSurface }]}>Total Bill ₹{grandTotal.toFixed(2)}</RNText>
+                            <RNText style={[cartStyles.metaDesc, { color: theme.colors.onSurfaceVariant }]}>Incl. taxes and charges</RNText>
+                        </View>
+                        <MaterialCommunityIcons name="chevron-right" size={20} color={theme.colors.onSurfaceVariant} />
+                    </View>
+                </View>
+
+                {/* 6. Join us at Feeding India */}
+                <View style={[cartStyles.card, { backgroundColor: isDark ? '#1C1A30' : '#FFFFFF', borderColor: isDark ? '#2D2A4A' : '#EBE6FF', padding: 0, overflow: 'hidden' }]}>
+                    {/* Feeding India Top Banner illustration */}
+                    <LinearGradient colors={['#1D4ED8', '#2563EB']} style={{ padding: 16 }}>
+                        <RNText style={{ color: '#FFF', fontSize: 16, fontWeight: '700' }}>Join us at feeding india</RNText>
+                        <RNText style={{ color: 'rgba(255,255,255,0.85)', fontSize: 12, marginTop: 4 }}>Together, we can fuel young minds to grow, learn, and thrive</RNText>
+                    </LinearGradient>
+                    <View style={{ padding: 16 }}>
+                        <RNText style={[cartStyles.feedDonateText, { color: theme.colors.onSurface }]}>Donate with every order</RNText>
+                        <View style={cartStyles.donationRow}>
+                            {[5, 10, 15].map(amt => (
+                                <TouchableOpacity 
+                                    key={amt} 
+                                    onPress={() => { triggerHaptic(); setDonation(donation === amt ? 0 : amt); }}
+                                    style={[
+                                        cartStyles.donatePill, 
+                                        { 
+                                            backgroundColor: donation === amt ? '#6C3BF5' : (isDark ? '#2D2845' : '#EDE8FF'),
+                                            borderColor: donation === amt ? '#6C3BF5' : 'transparent',
+                                            borderWidth: 1
+                                        }
+                                    ]}
+                                >
+                                    <RNText style={[cartStyles.donatePillText, { color: donation === amt ? '#FFF' : theme.colors.onSurface }]}>₹{amt}</RNText>
+                                    {amt === 15 && (
+                                        <View style={cartStyles.oneMealBadge}>
+                                            <RNText style={cartStyles.oneMealText}>1 MEAL</RNText>
+                                        </View>
+                                    )}
+                                </TouchableOpacity>
+                            ))}
+                            <TouchableOpacity 
+                                onPress={() => { triggerHaptic(); setDonation(donation === 25 ? 0 : 25); }}
+                                style={[
+                                    cartStyles.donatePill, 
+                                    { 
+                                        backgroundColor: donation === 25 ? '#6C3BF5' : (isDark ? '#2D2845' : '#EDE8FF') 
+                                    }
+                                ]}
+                            >
+                                <RNText style={[cartStyles.donatePillText, { color: donation === 25 ? '#FFF' : theme.colors.onSurface }]}>Custom</RNText>
+                            </TouchableOpacity>
+                        </View>
+                    </View>
+                </View>
+
+                {/* 7. Cancellation Policy */}
+                <View style={{ paddingHorizontal: 16, marginTop: 8, marginBottom: 16 }}>
+                    <RNText style={[cartStyles.cancelTitle, { color: theme.colors.onSurface }]}>CANCELLATION POLICY</RNText>
+                    <RNText style={[cartStyles.cancelDesc, { color: theme.colors.onSurfaceVariant }]}>
+                        A 100% cancellation charge will apply. This helps us compensate the restaurant partner for food preparation.
+                    </RNText>
+                </View>
+
+                {/* 8. Zomato Money */}
+                <View style={[cartStyles.card, { backgroundColor: isDark ? '#1C1A30' : '#FFFFFF', borderColor: isDark ? '#2D2A4A' : '#EBE6FF' }]}>
+                    <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+                        <MaterialCommunityIcons name="wallet-outline" size={22} color={theme.colors.onSurfaceVariant} />
+                        <View style={{ marginLeft: 12, flex: 1 }}>
+                            <RNText style={[cartStyles.walletTitle, { color: theme.colors.onSurface }]}>Zomato Money</RNText>
+                            <RNText style={[cartStyles.walletDesc, { color: theme.colors.onSurfaceVariant }]}>Single tap payments. Zero failures</RNText>
+                        </View>
+                        <MaterialCommunityIcons name="chevron-right" size={20} color={theme.colors.onSurfaceVariant} />
+                    </View>
+                </View>
+            </ScrollView>
+
+            {/* 9. Sticky Bottom Pay Bar */}
+            <View style={[cartStyles.bottomStickyBar, { backgroundColor: isDark ? '#131124' : '#FFFFFF', borderTopColor: isDark ? '#201E35' : '#EDE8FF' }]}>
+                <View style={cartStyles.bottomLeft}>
+                    <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+                        <MaterialCommunityIcons name="credit-card-outline" size={14} color={theme.colors.onSurfaceVariant} />
+                        <RNText style={[cartStyles.payUsingText, { color: theme.colors.onSurfaceVariant }]}>PAY USING ▴</RNText>
+                    </View>
+                    <RNText style={[cartStyles.paymentMethodText, { color: theme.colors.onSurface }]} numberOfLines={1}>Navi UPI</RNText>
+                </View>
+
+                <TouchableOpacity onPress={handlePlaceOrder} style={cartStyles.placeOrderBtn}>
+                    <View style={cartStyles.placeOrderLeft}>
+                        <RNText style={cartStyles.placeOrderTotal}>₹{grandTotal.toFixed(2)}</RNText>
+                        <RNText style={cartStyles.placeOrderTotalLabel}>TOTAL</RNText>
+                    </View>
+                    <View style={cartStyles.placeOrderRight}>
+                        <RNText style={cartStyles.placeOrderText}>Place Order</RNText>
+                        <MaterialCommunityIcons name="play" size={14} color="#FFF" style={{ marginLeft: 2 }} />
+                    </View>
+                </TouchableOpacity>
+            </View>
         </AppBackground>
     );
 };
+
 
 export const CheckoutScreen = ({ navigation }) => {
     const { theme } = useAppTheme();
@@ -2020,6 +2322,328 @@ const rdStyles = StyleSheet.create({
         height: 48,
         justifyContent: 'center',
         alignItems: 'center',
+    },
+});
+
+const cartStyles = StyleSheet.create({
+    card: {
+        marginHorizontal: 16,
+        marginTop: 12,
+        borderRadius: 20,
+        borderWidth: 1,
+        padding: 16,
+        overflow: 'hidden',
+    },
+    restaurantHeader: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        marginBottom: 16,
+    },
+    restaurantLogo: {
+        width: 44,
+        height: 44,
+        borderRadius: 22,
+        marginRight: 12,
+    },
+    restaurantName: {
+        fontSize: 16,
+        fontWeight: '700',
+    },
+    restaurantSub: {
+        fontSize: 12,
+        marginTop: 1,
+    },
+    itemRow: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        justifyContent: 'space-between',
+        paddingVertical: 12,
+        borderBottomWidth: 1,
+        borderBottomColor: 'rgba(108,59,245,0.06)',
+    },
+    itemLeft: {
+        flexDirection: 'row',
+        flex: 1,
+        paddingRight: 16,
+    },
+    itemName: {
+        fontSize: 14,
+        fontWeight: '600',
+    },
+    itemPrice: {
+        fontSize: 13,
+        marginTop: 2,
+        fontWeight: '600',
+    },
+    qtyContainer: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        borderRadius: 16,
+        height: 30,
+        paddingHorizontal: 4,
+    },
+    qtyBtn: {
+        width: 26,
+        height: 26,
+        justifyContent: 'center',
+        alignItems: 'center',
+    },
+    qtyText: {
+        fontSize: 14,
+        fontWeight: '800',
+        paddingHorizontal: 8,
+        minWidth: 20,
+        textAlign: 'center',
+    },
+    actionButtonsRow: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        justifyContent: 'space-around',
+        paddingTop: 14,
+    },
+    actionBtn: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        gap: 6,
+        paddingVertical: 4,
+    },
+    actionBtnText: {
+        fontSize: 13,
+        fontWeight: '700',
+        color: '#E03E52',
+    },
+    actionDivider: {
+        width: 1,
+        height: 16,
+        backgroundColor: 'rgba(108,59,245,0.15)',
+    },
+    specialHeader: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        marginBottom: 14,
+    },
+    specialTitle: {
+        fontSize: 15,
+        fontWeight: '700',
+    },
+    specialSub: {
+        fontSize: 11,
+        marginTop: 1,
+    },
+    addOnCard: {
+        width: 120,
+        borderRadius: 16,
+        marginRight: 12,
+        overflow: 'hidden',
+    },
+    addOnImageWrap: {
+        position: 'relative',
+        height: 80,
+    },
+    addOnImage: {
+        width: '100%',
+        height: '100%',
+    },
+    addOnAddBtn: {
+        position: 'absolute',
+        bottom: -6,
+        right: 8,
+        backgroundColor: '#E03E52',
+        width: 24,
+        height: 24,
+        borderRadius: 12,
+        justifyContent: 'center',
+        alignItems: 'center',
+        shadowColor: '#000',
+        shadowOpacity: 0.15,
+        shadowRadius: 4,
+        elevation: 2,
+    },
+    addOnName: {
+        fontSize: 11,
+        fontWeight: '600',
+        height: 32,
+    },
+    addOnPrice: {
+        fontSize: 11,
+        fontWeight: '700',
+        color: '#22C55E',
+    },
+    addOnOrigPrice: {
+        fontSize: 10,
+        color: '#888',
+        textDecorationLine: 'line-through',
+        marginLeft: 6,
+    },
+    offerRow: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        paddingVertical: 12,
+    },
+    offerTitle: {
+        fontSize: 14,
+        fontWeight: '700',
+    },
+    offerDesc: {
+        fontSize: 11,
+        marginTop: 2,
+    },
+    offerApplyBtn: {
+        paddingHorizontal: 12,
+        paddingVertical: 6,
+        borderRadius: 8,
+        borderWidth: 1,
+    },
+    offerApplyText: {
+        fontSize: 11,
+        fontWeight: '800',
+    },
+    divider: {
+        height: 1,
+    },
+    vipTitle: {
+        fontSize: 14,
+        fontWeight: '700',
+    },
+    vipDesc: {
+        fontSize: 11,
+        marginTop: 2,
+    },
+    metaRow: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        paddingVertical: 12,
+    },
+    metaTitle: {
+        fontSize: 14,
+        fontWeight: '700',
+    },
+    metaDesc: {
+        fontSize: 12,
+        marginTop: 2,
+    },
+    metaSub: {
+        fontSize: 11,
+        fontWeight: '700',
+        marginTop: 4,
+    },
+    metaDivider: {
+        height: 1,
+    },
+    feedDonateText: {
+        fontSize: 14,
+        fontWeight: '700',
+        marginBottom: 12,
+    },
+    donationRow: {
+        flexDirection: 'row',
+        justifyContent: 'space-between',
+        alignItems: 'center',
+        gap: 8,
+    },
+    donatePill: {
+        flex: 1,
+        height: 40,
+        borderRadius: 20,
+        justifyContent: 'center',
+        alignItems: 'center',
+        position: 'relative',
+    },
+    donatePillText: {
+        fontSize: 13,
+        fontWeight: '700',
+    },
+    oneMealBadge: {
+        position: 'absolute',
+        top: -6,
+        backgroundColor: '#1E293B',
+        paddingHorizontal: 6,
+        paddingVertical: 1,
+        borderRadius: 6,
+    },
+    oneMealText: {
+        color: '#FFF',
+        fontSize: 7,
+        fontWeight: '900',
+    },
+    cancelTitle: {
+        fontSize: 12,
+        fontWeight: '700',
+        letterSpacing: 0.5,
+    },
+    cancelDesc: {
+        fontSize: 11,
+        marginTop: 4,
+        lineHeight: 16,
+    },
+    walletTitle: {
+        fontSize: 14,
+        fontWeight: '700',
+    },
+    walletDesc: {
+        fontSize: 11,
+        marginTop: 2,
+    },
+    bottomStickyBar: {
+        position: 'absolute',
+        bottom: 0,
+        left: 0,
+        right: 0,
+        height: 80,
+        borderTopWidth: 1,
+        paddingHorizontal: 20,
+        flexDirection: 'row',
+        alignItems: 'center',
+        justifyContent: 'space-between',
+        zIndex: 10,
+    },
+    bottomLeft: {
+        flex: 1,
+        marginRight: 16,
+    },
+    payUsingText: {
+        fontSize: 10,
+        fontWeight: '800',
+        letterSpacing: 0.5,
+        marginLeft: 4,
+    },
+    paymentMethodText: {
+        fontSize: 14,
+        fontWeight: '800',
+        marginTop: 2,
+    },
+    placeOrderBtn: {
+        backgroundColor: '#E03E52', // Zomato bright rose/red
+        flexDirection: 'row',
+        alignItems: 'center',
+        justifyContent: 'space-between',
+        height: 48,
+        borderRadius: 14,
+        paddingHorizontal: 16,
+        width: 170,
+    },
+    placeOrderLeft: {
+        alignItems: 'flex-start',
+    },
+    placeOrderTotal: {
+        color: '#FFF',
+        fontSize: 14,
+        fontWeight: '800',
+    },
+    placeOrderTotalLabel: {
+        color: 'rgba(255,255,255,0.7)',
+        fontSize: 8,
+        fontWeight: '800',
+        marginTop: 1,
+    },
+    placeOrderRight: {
+        flexDirection: 'row',
+        alignItems: 'center',
+    },
+    placeOrderText: {
+        color: '#FFF',
+        fontSize: 14,
+        fontWeight: '800',
     },
 });
 

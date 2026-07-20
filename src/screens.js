@@ -249,7 +249,7 @@ const SORT_OPTIONS = [
 
 const FILTER_CHIPS = ['Gourmet', 'No packaging charges', 'New to you', 'Fastest delivery'];
 
-const HomeScreenHeader = ({ navigation, theme, isVegOnly, setIsVegOnly, selectedCategory, setSelectedCategory, netInfo, sortOption, setSortOption, activeChip, setActiveChip }) => {
+const HomeScreenHeader = ({ navigation, theme, isVegOnly, setIsVegOnly, selectedCategory, setSelectedCategory, netInfo, sortOption, setSortOption, activeChip, setActiveChip, filterMode }) => {
     const { user, selectedAddress } = useUser();
     const userInitial = user?.name ? user.name.charAt(0).toUpperCase() : 'G';
 
@@ -387,42 +387,24 @@ const HomeScreenHeader = ({ navigation, theme, isVegOnly, setIsVegOnly, selected
 
             {/* Recommended section */}
             <RNText style={[homeStyles.sectionTitle, { color: theme.dark ? 'rgba(255,255,255,0.5)' : 'rgba(108,59,245,0.55)' }]}>RECOMMENDED FOR YOU</RNText>
-            <View style={homeStyles.recommendedGrid}>
-                {ALL_RESTAURANTS.slice(0, 6).map(item => (
-                    <TouchableOpacity
+            <ScrollView
+                horizontal
+                showsHorizontalScrollIndicator={false}
+                contentContainerStyle={{ paddingHorizontal: 16, gap: 12, paddingBottom: 12 }}
+            >
+                {ALL_RESTAURANTS.slice(0, 8).map(item => (
+                    <RecommendedCard
                         key={item.id}
-                        style={homeStyles.recommendedCell}
-                        onPress={() => { triggerHaptic(); navigation.navigate('RestaurantDetails', { restaurant: item }); }}
-                        activeOpacity={0.85}
-                    >
-                        <BlurView intensity={theme.dark ? 28 : 50} tint={theme.dark ? 'dark' : 'light'}
-                            style={[homeStyles.recommendedImageWrap, {
-                                borderColor: theme.dark ? 'rgba(255,255,255,0.1)' : 'rgba(255,255,255,0.85)',
-                                backgroundColor: theme.dark ? 'rgba(255,255,255,0.04)' : 'rgba(255,255,255,0.6)',
-                            }]}
-                        >
-                            <Image source={{ uri: item.image }} style={homeStyles.recommendedImage} resizeMode="cover" />
-                            <LinearGradient colors={['transparent', 'rgba(0,0,0,0.5)']} style={StyleSheet.absoluteFill} />
-                            {item.offer && (
-                                <View style={homeStyles.recommendedOfferTag}>
-                                    <RNText style={homeStyles.recommendedOfferText} numberOfLines={1}>{item.offer}</RNText>
-                                </View>
-                            )}
-                            <View style={homeStyles.recommendedRating}>
-                                <MaterialCommunityIcons name="star" size={10} color="#FFD700" />
-                                <RNText style={homeStyles.recommendedRatingText}>{item.rating}</RNText>
-                            </View>
-                        </BlurView>
-                        <RNText style={[homeStyles.recommendedName, { color: theme.colors.onSurface }]} numberOfLines={1}>{item.name}</RNText>
-                        <View style={{ flexDirection: 'row', alignItems: 'center', marginTop: 2 }}>
-                            <MaterialCommunityIcons name="clock-outline" size={11} color={theme.colors.onSurfaceVariant} />
-                            <RNText style={[homeStyles.recommendedMeta, { color: theme.colors.onSurfaceVariant }]}>{item.deliveryTime} min</RNText>
-                        </View>
-                    </TouchableOpacity>
+                        restaurant={item}
+                        theme={theme}
+                        navigation={navigation}
+                    />
                 ))}
-            </View>
+            </ScrollView>
 
-            <RNText style={[homeStyles.sectionTitle, { color: theme.dark ? 'rgba(255,255,255,0.5)' : 'rgba(108,59,245,0.55)', marginTop: 8 }]}>ALL RESTAURANTS</RNText>
+            <RNText style={[homeStyles.sectionTitle, { color: theme.dark ? 'rgba(255,255,255,0.5)' : 'rgba(108,59,245,0.55)', marginTop: 8 }]}>
+                {filterMode === 'healthy' ? 'HEALTHY PLACES FOR YOU' : filterMode === 'under250' ? 'BUDGET BITES UNDER ₹250' : 'ALL RESTAURANTS'}
+            </RNText>
         </>
     );
 };
@@ -486,8 +468,6 @@ export const HomeScreen = ({ navigation, route }) => {
         />
     ), [theme, navigation]);
 
-    const showHeader = filterMode === 'all';
-
     return (
         <AppBackground>
             <FlatList
@@ -495,38 +475,20 @@ export const HomeScreen = ({ navigation, route }) => {
                 keyExtractor={(item) => item.id}
                 renderItem={renderRestaurantCard}
                 ListHeaderComponent={
-                    showHeader ? (
-                        <HomeScreenHeader
-                            navigation={navigation}
-                            theme={theme}
-                            isVegOnly={isVegOnly}
-                            setIsVegOnly={setIsVegOnly}
-                            selectedCategory={selectedCategory}
-                            setSelectedCategory={setSelectedCategory}
-                            netInfo={netInfo}
-                            sortOption={sortOption}
-                            setSortOption={setSortOption}
-                            activeChip={activeChip}
-                            setActiveChip={setActiveChip}
-                        />
-                    ) : (
-                        <BlurView intensity={theme.dark ? 50 : 65} tint={theme.dark ? 'dark' : 'light'}
-                            style={{ paddingTop: insets.top + 8, paddingHorizontal: 20, paddingBottom: 16, borderBottomWidth: 1, borderBottomColor: theme.dark ? 'rgba(255,255,255,0.07)' : 'rgba(108,59,245,0.1)', backgroundColor: theme.dark ? 'rgba(13,11,30,0.5)' : 'rgba(255,255,255,0.5)' }}>
-                            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10 }}>
-                                <View style={{ width: 38, height: 38, borderRadius: 19, backgroundColor: theme.colors.primary, justifyContent: 'center', alignItems: 'center' }}>
-                                    <MaterialCommunityIcons name={filterMode === 'healthy' ? 'leaf' : 'currency-inr'} size={20} color="#FFF" />
-                                </View>
-                                <View>
-                                    <RNText style={{ fontSize: 20, fontWeight: '800', color: theme.colors.onSurface }}>
-                                        {filterMode === 'under250' ? 'Under ₹250' : 'Healthy Mode'}
-                                    </RNText>
-                                    <RNText style={{ color: theme.colors.onSurfaceVariant, fontSize: 13, marginTop: 2 }}>
-                                        {filterMode === 'under250' ? 'Budget-friendly spots near you' : 'Good food, great wellbeing'}
-                                    </RNText>
-                                </View>
-                            </View>
-                        </BlurView>
-                    )
+                    <HomeScreenHeader
+                        navigation={navigation}
+                        theme={theme}
+                        isVegOnly={isVegOnly}
+                        setIsVegOnly={setIsVegOnly}
+                        selectedCategory={selectedCategory}
+                        setSelectedCategory={setSelectedCategory}
+                        netInfo={netInfo}
+                        sortOption={sortOption}
+                        setSortOption={setSortOption}
+                        activeChip={activeChip}
+                        setActiveChip={setActiveChip}
+                        filterMode={filterMode}
+                    />
                 }
                 ListEmptyComponent={
                     <View style={{ alignItems: 'center', marginTop: 80, paddingHorizontal: 32 }}>
@@ -537,7 +499,7 @@ export const HomeScreen = ({ navigation, route }) => {
                         </BlurView>
                     </View>
                 }
-                contentContainerStyle={{ paddingTop: showHeader ? insets.top : 0, paddingBottom: 160 }}
+                contentContainerStyle={{ paddingTop: insets.top, paddingBottom: 160 }}
             />
             <CartFAB navigation={navigation} />
         </AppBackground>

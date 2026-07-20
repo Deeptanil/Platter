@@ -244,6 +244,11 @@ export const RecommendedCard = ({ restaurant, theme, navigation }) => {
                         <MaterialCommunityIcons name="star" size={10} color="#FFF" style={{ marginRight: 2 }} />
                         <RNText style={recStyles.ratingText}>{restaurant.rating}</RNText>
                     </View>
+                    {restaurant.offer && (
+                        <View style={recStyles.discountPill}>
+                            <MaterialCommunityIcons name="percent" size={10} color="#FFF" />
+                        </View>
+                    )}
                 </View>
                 <View style={recStyles.info}>
                     <RNText style={[recStyles.name, { color: theme.colors.onSurface }]} numberOfLines={1}>{restaurant.name}</RNText>
@@ -365,7 +370,8 @@ const recStyles = StyleSheet.create({
     card: { borderRadius: 20, borderWidth: 1, overflow: 'hidden' },
     imageWrap: { position: 'relative' },
     image: { width: '100%', height: 110 },
-    ratingPill: { position: 'absolute', top: 8, right: 8, flexDirection: 'row', alignItems: 'center', paddingHorizontal: 7, paddingVertical: 3, borderRadius: 12 },
+    ratingPill: { position: 'absolute', top: 8, left: 8, flexDirection: 'row', alignItems: 'center', paddingHorizontal: 7, paddingVertical: 3, borderRadius: 12 },
+    discountPill: { position: 'absolute', top: 8, right: 8, backgroundColor: '#EF4444', width: 20, height: 20, borderRadius: 10, justifyContent: 'center', alignItems: 'center', borderWidth: 1, borderColor: 'rgba(255,255,255,0.2)' },
     ratingText: { color: '#FFF', fontSize: 10, fontWeight: '700' },
     info: { paddingHorizontal: 10, paddingVertical: 10 },
     name: { fontSize: 13, fontWeight: '700', marginBottom: 2 },

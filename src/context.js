@@ -271,16 +271,27 @@ export const CartProvider = ({children}) => {
     const [pastOrders, setPastOrders] = useState([]);
 
     useEffect(() => {
-        const loadPastOrders = async () => {
-            const pastOrdersJson = await AsyncStorage.getItem('pastOrders');
-            setPastOrders(pastOrdersJson ? JSON.parse(pastOrdersJson) : []);
+        const loadCartAndOrders = async () => {
+            try {
+                const storedCart = await AsyncStorage.getItem('eatopia_cart');
+                if (storedCart) setCart(JSON.parse(storedCart));
+
+                const pastOrdersJson = await AsyncStorage.getItem('pastOrders');
+                setPastOrders(pastOrdersJson ? JSON.parse(pastOrdersJson) : []);
+            } catch (e) {
+                console.warn('Failed to load cart/orders from storage:', e);
+            }
         };
-        loadPastOrders();
+        loadCartAndOrders();
     }, []);
 
     useEffect(() => {
         AsyncStorage.setItem('pastOrders', JSON.stringify(pastOrders));
     }, [pastOrders]);
+
+    useEffect(() => {
+        AsyncStorage.setItem('eatopia_cart', JSON.stringify(cart));
+    }, [cart]);
     
     const addToCart = (itemToAdd) => {
         setCart(prevCart => {

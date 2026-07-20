@@ -1,16 +1,16 @@
 {
   "expo": {
-    "name": "Eatopia",
-    "slug": "snack-b1b1def7-4438-4fdf-baa4-d1ccbe0cf0ec",
-    "version": "0.6.0",
+    "name": "Platter",
+    "slug": "platter-app",
+    "version": "1.0.0",
     "orientation": "portrait",
     "icon": "./assets/icon.png",
-    "userInterfaceStyle": "light",
+    "userInterfaceStyle": "automatic",
     "newArchEnabled": true,
     "splash": {
       "image": "./assets/splash-icon.png",
       "resizeMode": "contain",
-      "backgroundColor": "#ffffff"
+      "backgroundColor": "#0D0B1E"
     },
     "ios": {
       "supportsTablet": true
@@ -18,7 +18,7 @@
     "android": {
       "adaptiveIcon": {
         "foregroundImage": "./assets/adaptive-icon.png",
-        "backgroundColor": "#ffffff"
+        "backgroundColor": "#0D0B1E"
       },
       "edgeToEdgeEnabled": true
     },

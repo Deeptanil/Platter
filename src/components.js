@@ -197,7 +197,7 @@ const styles = StyleSheet.create({
         borderColor: 'rgba(255, 82, 82, 0.7)', 
     },
     glassButton: { flexDirection: 'row', width: '100%', paddingVertical: 14, paddingHorizontal: 20, borderRadius: 20, justifyContent: 'center', alignItems: 'center' },
-    glassButtonDark: { backgroundColor: '#d44d5c' },
-    glassButtonLight: { backgroundColor: 'rgba(149, 7, 20, 0.9)' },
+    glassButtonDark: { backgroundColor: '#9D7BFF' },
+    glassButtonLight: { backgroundColor: 'rgba(108, 59, 245, 0.9)' },
     glassButtonLabel: { fontSize: 18, fontWeight: 'bold' }
 });

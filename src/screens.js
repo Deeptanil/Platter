@@ -88,7 +88,7 @@ export const AuthScreen = ({ navigation }) => {
                         <Pressable style={styles.modalOverlay} onPress={() => setPopupVisible(false)}>
                             <GlassCard blur={true} style={styles.popupContainer}>
                                 <Text style={[styles.popupTitle, {color: theme.dark ? '#FFFFFF' : theme.colors.onSurface}]}>Location Information</Text>
-                                <Text style={[styles.popupText, {color: theme.dark ? '#E0E0E0' : theme.colors.onSurfaceVariant}]}>This app is currently functional only in Bengaluru.</Text>
+                                <Text style={[styles.popupText, {color: theme.dark ? '#E0E0E0' : theme.colors.onSurfaceVariant}]}>Platter is currently available in Mumbai only.</Text>
                                 <GlassButton title="OK" onPress={() => setPopupVisible(false)} style={{width: '100%'}}/>
                             </GlassCard>
                         </Pressable>
@@ -107,12 +107,12 @@ export const AuthScreen = ({ navigation }) => {
                             {stage === 'welcome' && (
                                 <View style={styles.stageContainer}>
                                     <Animated.View style={animatedTitleStyle}>
-                                        <Text style={[styles.appNameTitle, { color: theme.dark ? '#FFFFFF' : theme.colors.onSurface }]}>Eatopia</Text>
+                                        <Text style={[styles.appNameTitle, { color: theme.dark ? '#FFFFFF' : theme.colors.onSurface }]}>Platter</Text>
                                     </Animated.View>
                                     <Animated.View style={[{width: '100%'}, animatedCardStyle]}>
                                         <GlassCard>
-                                            <Text variant="headlineLarge" style={[styles.authTitle, { color: theme.dark ? '#FFFFFF' : theme.colors.onSurface }]}>Welcome</Text>
-                                            <Text variant="bodyLarge" style={[styles.authSubtitle, { color: theme.dark ? '#E0E0E0' : theme.colors.onSurfaceVariant }]}>Where every craving comes together.</Text>
+                                            <Text variant="headlineLarge" style={[styles.authTitle, { color: theme.dark ? '#FFFFFF' : theme.colors.onSurface }]}>Welcome to Platter</Text>
+                                            <Text variant="bodyLarge" style={[styles.authSubtitle, { color: theme.dark ? '#E0E0E0' : theme.colors.onSurfaceVariant }]}>Mumbai's hunger, delivered.</Text>
                                         </GlassCard>
                                         <GlassButton title="Next" icon="arrow-right" onPress={handlePrimaryAction}/>
                                     </Animated.View>
@@ -219,7 +219,7 @@ const HomeScreenHeader = ({ navigation, theme, isVegOnly, setIsVegOnly, selected
             <TouchableOpacity onPress={() => confettiRef.current?.start()}>
                 <View style={[styles.banner, bannerGlassStyle]}>
                      <MaterialCommunityIcons name="motorbike" color={theme.colors.primary} size={24}/>
-                    <Text style={{color: theme.colors.onSurface, marginLeft: 10, fontWeight: 'bold'}}>Free Delivery on orders over ₹300!</Text>
+                    <Text style={{color: theme.colors.onSurface, marginLeft: 10, fontWeight: 'bold'}}>Free Delivery on orders over ₹299 — only on Platter!</Text>
                 </View>
             </TouchableOpacity>
 

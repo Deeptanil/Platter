@@ -1,7 +1,8 @@
 import React, { useState, useMemo, useRef, useCallback, useEffect } from 'react';
-import { View, ScrollView, TouchableOpacity, FlatList, Image, Pressable, StyleSheet, KeyboardAvoidingView, Platform, Dimensions, Modal, SafeAreaView, Alert, TouchableWithoutFeedback, Keyboard, Animated as RNAnimated } from 'react-native';
+import { View, Text as RNText, ScrollView, TouchableOpacity, FlatList, Image, Pressable, StyleSheet, KeyboardAvoidingView, Platform, Dimensions, Modal, SafeAreaView, Alert, TouchableWithoutFeedback, Keyboard, Animated as RNAnimated } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { BlurView } from 'expo-blur';
+import { LinearGradient } from 'expo-linear-gradient';
 import { Text, Searchbar, Switch, Avatar, List, Divider, Button, Checkbox, Card, IconButton, RadioButton, SegmentedButtons, Menu, Chip, TextInput } from 'react-native-paper';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import ConfettiCannon from 'react-native-confetti-cannon';
@@ -168,9 +169,9 @@ export const AuthScreen = ({ navigation }) => {
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
 
 const BANNERS = [
-    { id: 'b1', title: 'MEALS UNDER', highlight: '\u20b9250', subtitle: 'Order from the best value spots', color: '#1a3a4a', accent: '#00c853' },
-    { id: 'b2', title: 'FREE DELIVERY', highlight: 'Above \u20b9299', subtitle: 'On every order, every time', color: '#2d1b4e', accent: '#9D7BFF' },
-    { id: 'b3', title: 'LATE NIGHT', highlight: 'SPECIALS', subtitle: 'Open past midnight for you', color: '#3a1a00', accent: '#FF6D00' },
+    { id: 'b1', title: 'MEALS UNDER', highlight: '\u20b9250', subtitle: 'Budget-friendly picks near you', gradColors: ['#0F2027', '#203A43', '#2C5364'], accent: '#00E676', icon: 'food-variant' },
+    { id: 'b2', title: 'FREE DELIVERY', highlight: 'Above \u20b9299', subtitle: 'Every restaurant, every order', gradColors: ['#1a0038', '#4a0072', '#7B1FA2'], accent: '#CE93D8', icon: 'bike-fast' },
+    { id: 'b3', title: 'LATE NIGHT', highlight: 'SPECIALS', subtitle: 'Open past midnight just for you', gradColors: ['#1a0800', '#7f3b00', '#bf360c'], accent: '#FFAB40', icon: 'moon-waning-crescent' },
 ];
 
 const HomeBannerCarousel = ({ theme }) => {
@@ -189,34 +190,46 @@ const HomeBannerCarousel = ({ theme }) => {
     }, []);
 
     return (
-        <View style={{ marginBottom: 8 }}>
+        <View style={{ marginHorizontal: 16, marginBottom: 12 }}>
             <ScrollView
                 ref={scrollRef}
                 horizontal
                 pagingEnabled
                 showsHorizontalScrollIndicator={false}
-                onMomentumScrollEnd={e => setActiveIndex(Math.round(e.nativeEvent.contentOffset.x / SCREEN_WIDTH))}
+                decelerationRate="fast"
+                snapToInterval={SCREEN_WIDTH - 32}
+                onMomentumScrollEnd={e => setActiveIndex(Math.round(e.nativeEvent.contentOffset.x / (SCREEN_WIDTH - 32)))}
             >
                 {BANNERS.map(b => (
-                    <View key={b.id} style={[homeStyles.bannerSlide, { backgroundColor: b.color }]}>
+                    <LinearGradient
+                        key={b.id}
+                        colors={b.gradColors}
+                        start={{ x: 0, y: 0 }}
+                        end={{ x: 1, y: 1 }}
+                        style={homeStyles.bannerSlide}
+                    >
+                        <BlurView intensity={10} tint="dark" style={StyleSheet.absoluteFill} />
                         <View style={homeStyles.bannerTextBlock}>
-                            <Text style={[homeStyles.bannerTitle, { color: '#FFFFFF88' }]}>{b.title}</Text>
-                            <Text style={[homeStyles.bannerHighlight, { color: b.accent }]}>{b.highlight}</Text>
-                            <Text style={[homeStyles.bannerSub, { color: '#FFFFFF99' }]}>{b.subtitle}</Text>
-                            <TouchableOpacity style={[homeStyles.bannerBtn, { borderColor: b.accent }]}>
-                                <Text style={[homeStyles.bannerBtnText, { color: b.accent }]}>Explore</Text>
-                                <MaterialCommunityIcons name="chevron-right" size={14} color={b.accent} />
-                            </TouchableOpacity>
+                            <RNText style={homeStyles.bannerTitle}>{b.title}</RNText>
+                            <RNText style={[homeStyles.bannerHighlight, { color: b.accent }]}>{b.highlight}</RNText>
+                            <RNText style={homeStyles.bannerSub}>{b.subtitle}</RNText>
+                            <View style={[homeStyles.bannerBtn, { borderColor: b.accent + '80' }]}>
+                                <RNText style={[homeStyles.bannerBtnText, { color: b.accent }]}>Explore</RNText>
+                                <MaterialCommunityIcons name="arrow-right" size={13} color={b.accent} />
+                            </View>
                         </View>
-                        <View style={[homeStyles.bannerIconCircle, { backgroundColor: b.accent + '22' }]}>
-                            <MaterialCommunityIcons name="silverware-fork-knife" size={48} color={b.accent} />
+                        <View style={[homeStyles.bannerIconCircle, { backgroundColor: b.accent + '18' }]}>
+                            <MaterialCommunityIcons name={b.icon} size={52} color={b.accent} />
                         </View>
-                    </View>
+                    </LinearGradient>
                 ))}
             </ScrollView>
             <View style={homeStyles.dotsRow}>
                 {BANNERS.map((_, i) => (
-                    <View key={i} style={[homeStyles.dot, { backgroundColor: i === activeIndex ? theme.colors.primary : (theme.dark ? 'rgba(255,255,255,0.3)' : 'rgba(0,0,0,0.2)') }]} />
+                    <View key={i} style={[
+                        homeStyles.dot,
+                        { width: i === activeIndex ? 20 : 6, backgroundColor: i === activeIndex ? theme.colors.primary : (theme.dark ? 'rgba(255,255,255,0.25)' : 'rgba(108,59,245,0.25)') }
+                    ]} />
                 ))}
             </View>
         </View>
@@ -239,128 +252,174 @@ const HomeScreenHeader = ({ navigation, theme, isVegOnly, setIsVegOnly, selected
 
     return (
         <>
-            {/* Top bar */}
-            <View style={homeStyles.topBar}>
+            {/* Frosted top bar */}
+            <BlurView
+                intensity={theme.dark ? 55 : 70}
+                tint={theme.dark ? 'dark' : 'light'}
+                style={[homeStyles.topBar, {
+                    borderBottomColor: theme.dark ? 'rgba(255,255,255,0.07)' : 'rgba(108,59,245,0.1)',
+                    backgroundColor: theme.dark ? 'rgba(13,11,30,0.5)' : 'rgba(255,255,255,0.45)',
+                }]}
+            >
                 <TouchableOpacity onPress={() => navigation.navigate('MyAddresses')} style={{ flex: 1 }}>
                     <View style={{ flexDirection: 'row', alignItems: 'center' }}>
-                        <MaterialCommunityIcons name="home-outline" size={18} color={theme.colors.primary} style={{ marginRight: 4 }} />
-                        <Text style={[homeStyles.topBarLocation, { color: theme.colors.onSurface }]}>Home</Text>
-                        <MaterialCommunityIcons name="chevron-down" size={18} color={theme.colors.onSurface} />
+                        <MaterialCommunityIcons name="map-marker" size={16} color={theme.colors.primary} style={{ marginRight: 4 }} />
+                        <RNText style={[homeStyles.topBarLocation, { color: theme.colors.onSurface }]}>Home</RNText>
+                        <MaterialCommunityIcons name="chevron-down" size={16} color={theme.colors.primary} />
                     </View>
-                    <Text style={[homeStyles.topBarAddress, { color: theme.colors.onSurfaceVariant }]} numberOfLines={1}>
+                    <RNText style={[homeStyles.topBarAddress, { color: theme.colors.onSurfaceVariant }]} numberOfLines={1}>
                         {selectedAddress?.line1 || 'Mumbai, Maharashtra'}
-                    </Text>
+                    </RNText>
                 </TouchableOpacity>
-                <Pressable onPress={() => navigation.navigate('Settings')} style={{ marginLeft: 16 }}>
-                    <Avatar.Text
-                        size={38}
-                        label={userInitial}
-                        style={{ backgroundColor: theme.colors.primary }}
-                        color="#FFFFFF"
-                    />
-                </Pressable>
-            </View>
+                <TouchableOpacity onPress={() => navigation.navigate('Settings')} style={[homeStyles.avatarBtn, { backgroundColor: theme.colors.primary }]}>
+                    <RNText style={homeStyles.avatarLabel}>{userInitial}</RNText>
+                </TouchableOpacity>
+            </BlurView>
 
-            {/* Search bar + VEG toggle */}
+            {/* Pill search bar + VEG toggle */}
             <View style={homeStyles.searchRow}>
-                <Pressable onPress={() => navigation.navigate('Search')} style={homeStyles.searchBox}>
-                    <View style={[homeStyles.searchInner, { backgroundColor: theme.dark ? 'rgba(255,255,255,0.08)' : 'rgba(0,0,0,0.06)', borderColor: theme.dark ? 'rgba(255,255,255,0.1)' : 'rgba(0,0,0,0.1)' }]}>
-                        <MaterialCommunityIcons name="magnify" size={22} color={theme.colors.onSurfaceVariant} />
-                        <Text style={[homeStyles.searchPlaceholder, { color: theme.colors.onSurfaceVariant }]}>Search restaurants or dishes</Text>
-                    </View>
-                </Pressable>
-                <View style={[homeStyles.vegBadge, { backgroundColor: theme.dark ? '#1a3a1a' : '#e8f5e9', borderColor: isVegOnly ? '#4CAF50' : 'transparent', borderWidth: 1 }]}>
-                    <Text style={[homeStyles.vegLabel, { color: '#4CAF50' }]}>VEG</Text>
-                    <Switch value={isVegOnly} onValueChange={setIsVegOnly} color="#4CAF50" style={{ transform: [{ scaleX: 0.75 }, { scaleY: 0.75 }] }} />
-                </View>
+                <TouchableOpacity onPress={() => navigation.navigate('Search')} style={homeStyles.searchBox} activeOpacity={0.85}>
+                    <BlurView intensity={theme.dark ? 30 : 50} tint={theme.dark ? 'dark' : 'light'}
+                        style={[homeStyles.searchInner, {
+                            borderColor: theme.dark ? 'rgba(255,255,255,0.12)' : 'rgba(108,59,245,0.18)',
+                            backgroundColor: theme.dark ? 'rgba(255,255,255,0.06)' : 'rgba(255,255,255,0.7)',
+                        }]}
+                    >
+                        <MaterialCommunityIcons name="magnify" size={20} color={theme.colors.primary} />
+                        <RNText style={[homeStyles.searchPlaceholder, { color: theme.colors.onSurfaceVariant }]}>Search restaurants or dishes</RNText>
+                    </BlurView>
+                </TouchableOpacity>
+                <TouchableOpacity
+                    onPress={() => setIsVegOnly(v => !v)}
+                    style={[homeStyles.vegToggle, { backgroundColor: isVegOnly ? '#22C55E' : (theme.dark ? 'rgba(255,255,255,0.08)' : 'rgba(0,0,0,0.06)'), borderColor: isVegOnly ? '#22C55E' : (theme.dark ? 'rgba(255,255,255,0.15)' : 'rgba(0,0,0,0.12)') }]}
+                >
+                    <MaterialCommunityIcons name={isVegOnly ? 'leaf' : 'leaf-off'} size={18} color={isVegOnly ? '#FFF' : '#22C55E'} />
+                </TouchableOpacity>
             </View>
 
             {/* Offline banner */}
             {netInfo?.isInternetReachable === false && (
-                <View style={[homeStyles.offlineBanner, { backgroundColor: theme.colors.surfaceVariant }]}>
-                    <MaterialCommunityIcons name="wifi-off" color={theme.colors.onSurfaceVariant} size={18} />
-                    <Text style={{ color: theme.colors.onSurfaceVariant, marginLeft: 8, fontSize: 13 }}>You are offline. Content may be outdated.</Text>
-                </View>
+                <BlurView intensity={theme.dark ? 30 : 40} tint={theme.dark ? 'dark' : 'light'}
+                    style={[homeStyles.offlineBanner, { borderColor: theme.dark ? 'rgba(255,255,255,0.1)' : 'rgba(0,0,0,0.1)' }]}>
+                    <MaterialCommunityIcons name="wifi-off" color="#FF9800" size={16} />
+                    <RNText style={{ color: theme.dark ? '#FFF' : theme.colors.onSurface, marginLeft: 8, fontSize: 13 }}>You are offline.</RNText>
+                </BlurView>
             )}
 
             {/* Hero Banner Carousel */}
             <HomeBannerCarousel theme={theme} />
 
-            {/* Category scroller */}
+            {/* Frosted glass category scroller */}
             <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={homeStyles.categoryScroll}>
-                {CATEGORIES.map(item => (
-                    <TouchableOpacity key={item.name} style={homeStyles.categoryItem} onPress={() => setSelectedCategory(item.name)}>
-                        <View style={[homeStyles.categoryImageWrap, selectedCategory === item.name && { borderColor: theme.colors.primary, borderWidth: 2 }]}>
-                            <Image source={{ uri: item.image }} style={homeStyles.categoryImage} />
-                        </View>
-                        <Text style={[homeStyles.categoryLabel, { color: selectedCategory === item.name ? theme.colors.primary : theme.colors.onSurfaceVariant }]}>{item.name}</Text>
-                    </TouchableOpacity>
-                ))}
+                {CATEGORIES.map(item => {
+                    const isActive = selectedCategory === item.name;
+                    return (
+                        <TouchableOpacity key={item.name} style={homeStyles.categoryItem} onPress={() => setSelectedCategory(item.name)} activeOpacity={0.8}>
+                            <BlurView intensity={theme.dark ? 30 : 45} tint={theme.dark ? 'dark' : 'light'}
+                                style={[homeStyles.categoryImageWrap, {
+                                    borderColor: isActive ? theme.colors.primary : 'transparent',
+                                    borderWidth: isActive ? 2.5 : 0,
+                                    backgroundColor: theme.dark ? 'rgba(255,255,255,0.06)' : 'rgba(255,255,255,0.5)',
+                                }]}
+                            >
+                                <Image source={{ uri: item.image }} style={homeStyles.categoryImage} />
+                            </BlurView>
+                            <RNText style={[homeStyles.categoryLabel, { color: isActive ? theme.colors.primary : theme.colors.onSurfaceVariant }]}>{item.name}</RNText>
+                        </TouchableOpacity>
+                    );
+                })}
             </ScrollView>
 
-            {/* Filter chips */}
+            {/* Pill filter chips */}
             <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={homeStyles.chipsRow}>
-                <TouchableOpacity style={[homeStyles.filterChip, { backgroundColor: theme.dark ? 'rgba(255,255,255,0.1)' : 'rgba(0,0,0,0.07)' }]}>
-                    <MaterialCommunityIcons name="tune-variant" size={14} color={theme.colors.onSurface} style={{ marginRight: 4 }} />
-                    <Text style={[homeStyles.chipLabel, { color: theme.colors.onSurface }]}>Filters</Text>
-                </TouchableOpacity>
+                <BlurView intensity={theme.dark ? 25 : 40} tint={theme.dark ? 'dark' : 'light'}
+                    style={[homeStyles.filterChip, { borderColor: theme.dark ? 'rgba(255,255,255,0.1)' : 'rgba(108,59,245,0.15)', backgroundColor: theme.dark ? 'rgba(255,255,255,0.05)' : 'rgba(108,59,245,0.06)' }]}>
+                    <MaterialCommunityIcons name="tune-variant" size={13} color={theme.colors.primary} style={{ marginRight: 4 }} />
+                    <RNText style={[homeStyles.chipLabel, { color: theme.colors.primary }]}>Filter</RNText>
+                </BlurView>
                 {FILTER_CHIPS.map(chip => (
                     <TouchableOpacity
                         key={chip}
-                        style={[homeStyles.filterChip, { backgroundColor: activeChip === chip ? theme.colors.primary : (theme.dark ? 'rgba(255,255,255,0.1)' : 'rgba(0,0,0,0.07)') }]}
-                        onPress={() => setActiveChip(prev => prev === chip ? null : chip)}
+                        onPress={() => { triggerHaptic(); setActiveChip(prev => prev === chip ? null : chip); }}
+                        activeOpacity={0.8}
                     >
-                        <Text style={[homeStyles.chipLabel, { color: activeChip === chip ? '#FFF' : theme.colors.onSurface }]}>{chip}</Text>
+                        {activeChip === chip ? (
+                            <LinearGradient
+                                colors={['#8B5CF6', '#6C3BF5']}
+                                start={{ x: 0, y: 0 }}
+                                end={{ x: 1, y: 0 }}
+                                style={homeStyles.filterChip}
+                            >
+                                <RNText style={[homeStyles.chipLabel, { color: '#FFF' }]}>{chip}</RNText>
+                            </LinearGradient>
+                        ) : (
+                            <BlurView intensity={theme.dark ? 25 : 40} tint={theme.dark ? 'dark' : 'light'}
+                                style={[homeStyles.filterChip, { borderColor: theme.dark ? 'rgba(255,255,255,0.1)' : 'rgba(108,59,245,0.15)', backgroundColor: theme.dark ? 'rgba(255,255,255,0.05)' : 'rgba(108,59,245,0.06)' }]}>
+                                <RNText style={[homeStyles.chipLabel, { color: theme.colors.onSurface }]}>{chip}</RNText>
+                            </BlurView>
+                        )}
                     </TouchableOpacity>
                 ))}
             </ScrollView>
 
             {/* Sort options */}
-            <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ paddingHorizontal: 16, paddingBottom: 8, gap: 8 }}>
+            <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ paddingHorizontal: 16, paddingBottom: 10, gap: 8 }}>
                 {SORT_OPTIONS.map(opt => (
-                    <TouchableOpacity
-                        key={opt.key}
-                        onPress={() => setSortOption(opt.key)}
-                        style={[homeStyles.sortChip, { backgroundColor: sortOption === opt.key ? theme.colors.primary : theme.colors.surfaceVariant }]}>
-                        <MaterialCommunityIcons name={opt.icon} size={13} color={sortOption === opt.key ? '#FFF' : theme.colors.onSurfaceVariant} style={{ marginRight: 4 }} />
-                        <Text style={{ fontSize: 12, color: sortOption === opt.key ? '#FFF' : theme.colors.onSurface }}>{opt.label}</Text>
+                    <TouchableOpacity key={opt.key} onPress={() => { triggerHaptic(); setSortOption(opt.key); }} activeOpacity={0.8}>
+                        {sortOption === opt.key ? (
+                            <LinearGradient colors={['#8B5CF6', '#6C3BF5']} start={{ x: 0, y: 0 }} end={{ x: 1, y: 0 }} style={homeStyles.sortChip}>
+                                <MaterialCommunityIcons name={opt.icon} size={13} color="#FFF" style={{ marginRight: 4 }} />
+                                <RNText style={{ fontSize: 12, color: '#FFF', fontWeight: '600' }}>{opt.label}</RNText>
+                            </LinearGradient>
+                        ) : (
+                            <BlurView intensity={theme.dark ? 25 : 40} tint={theme.dark ? 'dark' : 'light'}
+                                style={[homeStyles.sortChip, { borderColor: theme.dark ? 'rgba(255,255,255,0.1)' : 'rgba(108,59,245,0.15)', backgroundColor: theme.dark ? 'rgba(255,255,255,0.05)' : 'rgba(108,59,245,0.06)' }]}>
+                                <MaterialCommunityIcons name={opt.icon} size={13} color={theme.colors.onSurfaceVariant} style={{ marginRight: 4 }} />
+                                <RNText style={{ fontSize: 12, color: theme.colors.onSurface }}>{opt.label}</RNText>
+                            </BlurView>
+                        )}
                     </TouchableOpacity>
                 ))}
             </ScrollView>
 
-            {/* Recommended section header */}
-            <Text style={[homeStyles.sectionTitle, { color: theme.colors.onSurface }]}>RECOMMENDED FOR YOU</Text>
-
-            {/* 3-column recommended grid */}
+            {/* Recommended section */}
+            <RNText style={[homeStyles.sectionTitle, { color: theme.dark ? 'rgba(255,255,255,0.5)' : 'rgba(108,59,245,0.55)' }]}>RECOMMENDED FOR YOU</RNText>
             <View style={homeStyles.recommendedGrid}>
                 {ALL_RESTAURANTS.slice(0, 6).map(item => (
                     <TouchableOpacity
                         key={item.id}
                         style={homeStyles.recommendedCell}
                         onPress={() => { triggerHaptic(); navigation.navigate('RestaurantDetails', { restaurant: item }); }}
+                        activeOpacity={0.85}
                     >
-                        <View style={homeStyles.recommendedImageWrap}>
+                        <BlurView intensity={theme.dark ? 28 : 50} tint={theme.dark ? 'dark' : 'light'}
+                            style={[homeStyles.recommendedImageWrap, {
+                                borderColor: theme.dark ? 'rgba(255,255,255,0.1)' : 'rgba(255,255,255,0.85)',
+                                backgroundColor: theme.dark ? 'rgba(255,255,255,0.04)' : 'rgba(255,255,255,0.6)',
+                            }]}
+                        >
                             <Image source={{ uri: item.image }} style={homeStyles.recommendedImage} resizeMode="cover" />
+                            <LinearGradient colors={['transparent', 'rgba(0,0,0,0.5)']} style={StyleSheet.absoluteFill} />
                             {item.offer && (
                                 <View style={homeStyles.recommendedOfferTag}>
-                                    <Text style={homeStyles.recommendedOfferText} numberOfLines={1}>{item.offer}</Text>
+                                    <RNText style={homeStyles.recommendedOfferText} numberOfLines={1}>{item.offer}</RNText>
                                 </View>
                             )}
                             <View style={homeStyles.recommendedRating}>
-                                <MaterialCommunityIcons name="star" size={11} color="#FFD700" />
-                                <Text style={homeStyles.recommendedRatingText}>{item.rating}</Text>
+                                <MaterialCommunityIcons name="star" size={10} color="#FFD700" />
+                                <RNText style={homeStyles.recommendedRatingText}>{item.rating}</RNText>
                             </View>
-                        </View>
-                        <Text style={[homeStyles.recommendedName, { color: theme.colors.onSurface }]} numberOfLines={1}>{item.name}</Text>
+                        </BlurView>
+                        <RNText style={[homeStyles.recommendedName, { color: theme.colors.onSurface }]} numberOfLines={1}>{item.name}</RNText>
                         <View style={{ flexDirection: 'row', alignItems: 'center', marginTop: 2 }}>
                             <MaterialCommunityIcons name="clock-outline" size={11} color={theme.colors.onSurfaceVariant} />
-                            <Text style={[homeStyles.recommendedMeta, { color: theme.colors.onSurfaceVariant }]}>{item.deliveryTime} mins</Text>
+                            <RNText style={[homeStyles.recommendedMeta, { color: theme.colors.onSurfaceVariant }]}>{item.deliveryTime} min</RNText>
                         </View>
                     </TouchableOpacity>
                 ))}
             </View>
 
-            <Text style={[homeStyles.sectionTitle, { color: theme.colors.onSurface, marginTop: 8 }]}>ALL RESTAURANTS</Text>
+            <RNText style={[homeStyles.sectionTitle, { color: theme.dark ? 'rgba(255,255,255,0.5)' : 'rgba(108,59,245,0.55)', marginTop: 8 }]}>ALL RESTAURANTS</RNText>
         </>
     );
 };
@@ -432,18 +491,34 @@ export const HomeScreen = ({ navigation, route }) => {
                             setSortOption={setSortOption}
                         />
                     ) : (
-                        <View style={{ paddingTop: insets.top + 8, paddingHorizontal: 16, paddingBottom: 12 }}>
-                            <Text style={{ fontSize: 22, fontWeight: 'bold', color: theme.colors.onSurface }}>
-                                {filterMode === 'under250' ? 'Under \u20b9250' : 'Healthy Mode'}
-                            </Text>
-                            <Text style={{ color: theme.colors.onSurfaceVariant, marginTop: 4 }}>
-                                {filterMode === 'under250' ? 'Budget-friendly options for you' : 'Good food for your wellbeing'}
-                            </Text>
-                        </View>
+                        <BlurView intensity={theme.dark ? 50 : 65} tint={theme.dark ? 'dark' : 'light'}
+                            style={{ paddingTop: insets.top + 8, paddingHorizontal: 20, paddingBottom: 16, borderBottomWidth: 1, borderBottomColor: theme.dark ? 'rgba(255,255,255,0.07)' : 'rgba(108,59,245,0.1)', backgroundColor: theme.dark ? 'rgba(13,11,30,0.5)' : 'rgba(255,255,255,0.5)' }}>
+                            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10 }}>
+                                <View style={{ width: 38, height: 38, borderRadius: 19, backgroundColor: theme.colors.primary, justifyContent: 'center', alignItems: 'center' }}>
+                                    <MaterialCommunityIcons name={filterMode === 'healthy' ? 'leaf' : 'currency-inr'} size={20} color="#FFF" />
+                                </View>
+                                <View>
+                                    <RNText style={{ fontSize: 20, fontWeight: '800', color: theme.colors.onSurface }}>
+                                        {filterMode === 'under250' ? 'Under \u20b9250' : 'Healthy Mode'}
+                                    </RNText>
+                                    <RNText style={{ color: theme.colors.onSurfaceVariant, fontSize: 13, marginTop: 2 }}>
+                                        {filterMode === 'under250' ? 'Budget-friendly spots near you' : 'Good food, great wellbeing'}
+                                    </RNText>
+                                </View>
+                            </View>
+                        </BlurView>
                     )
                 }
-                ListEmptyComponent={<View style={{ alignItems: 'center', marginTop: 60, paddingHorizontal: 32 }}><MaterialCommunityIcons name="silverware-fork-knife" size={64} color={theme.colors.onSurfaceVariant} /><Text style={{ color: theme.colors.onSurface, marginTop: 12, textAlign: 'center' }}>No restaurants found.</Text></View>}
-                contentContainerStyle={{ paddingTop: showHeader ? insets.top : 0, paddingBottom: 100 }}
+                ListEmptyComponent={
+                    <View style={{ alignItems: 'center', marginTop: 80, paddingHorizontal: 32 }}>
+                        <BlurView intensity={30} tint={theme.dark ? 'dark' : 'light'} style={{ padding: 24, borderRadius: 32, borderWidth: 1, borderColor: theme.dark ? 'rgba(255,255,255,0.08)' : 'rgba(108,59,245,0.15)', alignItems: 'center', backgroundColor: theme.dark ? 'rgba(255,255,255,0.04)' : 'rgba(255,255,255,0.5)' }}>
+                            <MaterialCommunityIcons name="silverware-fork-knife" size={52} color={theme.colors.primary} />
+                            <RNText style={{ color: theme.colors.onSurface, marginTop: 14, textAlign: 'center', fontWeight: '600', fontSize: 16 }}>No restaurants found</RNText>
+                            <RNText style={{ color: theme.colors.onSurfaceVariant, marginTop: 6, textAlign: 'center', fontSize: 13 }}>Try adjusting your filters</RNText>
+                        </BlurView>
+                    </View>
+                }
+                contentContainerStyle={{ paddingTop: showHeader ? insets.top : 0, paddingBottom: 160 }}
             />
             <CartFAB navigation={navigation} />
         </AppBackground>
@@ -456,74 +531,65 @@ const MenuItemCard = ({ item, restaurant }) => {
     const cartItem = cart.find(ci => ci.id === item.id);
     const quantity = cartItem ? cartItem.quantity : 0;
 
-    const QuantityButton = () => (
-        <View style={[rdStyles.qtyBox, { backgroundColor: theme.colors.primary }]}>
-            <TouchableOpacity onPress={() => { triggerHaptic(); removeFromCart(item); }} style={rdStyles.qtyBtn}>
-                <MaterialCommunityIcons name="minus" size={16} color="#FFF" />
-            </TouchableOpacity>
-            <Text style={rdStyles.qtyText}>{quantity}</Text>
-            <TouchableOpacity onPress={() => { triggerHaptic(); addToCart({ ...item, restaurantName: restaurant.name }); }} style={rdStyles.qtyBtn}>
-                <MaterialCommunityIcons name="plus" size={16} color="#FFF" />
-            </TouchableOpacity>
-        </View>
-    );
-
-    const AddButton = () => (
-        <TouchableOpacity
-            style={[rdStyles.addBtn, { backgroundColor: theme.colors.primary }]}
-            onPress={() => { triggerHaptic(); addToCart({ ...item, restaurantName: restaurant.name }); }}
-        >
-            <MaterialCommunityIcons name="plus" size={16} color="#FFF" />
-            <Text style={rdStyles.addBtnText}>ADD</Text>
-        </TouchableOpacity>
-    );
-
     return (
-        <View style={[rdStyles.menuItem, { borderBottomColor: theme.dark ? 'rgba(255,255,255,0.08)' : 'rgba(0,0,0,0.08)' }]}>
+        <BlurView
+            intensity={theme.dark ? 22 : 45}
+            tint={theme.dark ? 'dark' : 'light'}
+            style={[rdStyles.menuItem, {
+                borderColor: theme.dark ? 'rgba(255,255,255,0.07)' : 'rgba(108,59,245,0.1)',
+                backgroundColor: theme.dark ? 'rgba(255,255,255,0.04)' : 'rgba(255,255,255,0.55)',
+            }]}
+        >
             {/* Left content */}
             <View style={{ flex: 1, paddingRight: 12 }}>
-                <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 4 }}>
-                    <MaterialCommunityIcons
-                        name={item.isVeg ? 'square-outline' : 'square-outline'}
-                        size={16}
-                        color={item.isVeg ? '#4CAF50' : '#F44336'}
-                        style={{ marginRight: 6 }}
-                    />
-                    <MaterialCommunityIcons
-                        name={item.isVeg ? 'circle' : 'circle'}
-                        size={8}
-                        color={item.isVeg ? '#4CAF50' : '#F44336'}
-                        style={{ position: 'absolute', left: 4 }}
-                    />
+                <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 6 }}>
+                    <View style={[{ width: 16, height: 16, borderRadius: 3, borderWidth: 1.5, justifyContent: 'center', alignItems: 'center', marginRight: 6 }, { borderColor: item.isVeg ? '#22C55E' : '#EF4444' }]}>
+                        <View style={{ width: 8, height: 8, borderRadius: 4, backgroundColor: item.isVeg ? '#22C55E' : '#EF4444' }} />
+                    </View>
                     {item.isHighlyOrdered && (
-                        <View style={rdStyles.highlyOrderedBadge}>
+                        <View style={[rdStyles.highlyOrderedBadge, { backgroundColor: '#FF6D0018' }]}>
                             <MaterialCommunityIcons name="trending-up" size={11} color="#FF6D00" />
-                            <Text style={rdStyles.highlyOrderedText}>Highly reordered</Text>
+                            <RNText style={rdStyles.highlyOrderedText}>Top pick</RNText>
                         </View>
                     )}
                 </View>
-                <Text style={[rdStyles.menuItemName, { color: theme.colors.onSurface }]}>{item.name}</Text>
-                <Text style={[rdStyles.menuItemPrice, { color: theme.colors.onSurface }]}>\u20b9{item.price}</Text>
+                <RNText style={[rdStyles.menuItemName, { color: theme.colors.onSurface }]}>{item.name}</RNText>
+                <RNText style={[rdStyles.menuItemPrice, { color: theme.colors.primary, fontWeight: '700' }]}>\u20b9{item.price}</RNText>
                 {item.isSpicy && (
                     <View style={{ flexDirection: 'row', alignItems: 'center', marginTop: 4 }}>
-                        <MaterialCommunityIcons name="chili-mild" size={13} color="#FF5722" />
-                        <Text style={{ fontSize: 11, color: '#FF5722', marginLeft: 3 }}>Spicy</Text>
+                        <MaterialCommunityIcons name="fire" size={12} color="#FF5722" />
+                        <RNText style={{ fontSize: 11, color: '#FF5722', marginLeft: 3, fontWeight: '600' }}>Spicy</RNText>
                     </View>
                 )}
             </View>
 
             {/* Right: image + ADD button */}
             <View style={rdStyles.menuItemRight}>
-                <Image
-                    source={{ uri: restaurant.image }}
-                    style={rdStyles.menuItemImage}
-                    resizeMode="cover"
-                />
+                <View style={{ borderRadius: 14, overflow: 'hidden' }}>
+                    <Image source={{ uri: restaurant.image }} style={rdStyles.menuItemImage} resizeMode="cover" />
+                </View>
                 <View style={rdStyles.menuItemAction}>
-                    {quantity > 0 ? <QuantityButton /> : <AddButton />}
+                    {quantity > 0 ? (
+                        <LinearGradient colors={['#8B5CF6', '#6C3BF5']} start={{ x: 0, y: 0 }} end={{ x: 1, y: 0 }} style={rdStyles.qtyBox}>
+                            <TouchableOpacity onPress={() => { triggerHaptic(); removeFromCart(item); }} style={rdStyles.qtyBtn}>
+                                <MaterialCommunityIcons name="minus" size={14} color="#FFF" />
+                            </TouchableOpacity>
+                            <RNText style={rdStyles.qtyText}>{quantity}</RNText>
+                            <TouchableOpacity onPress={() => { triggerHaptic(); addToCart({ ...item, restaurantName: restaurant.name }); }} style={rdStyles.qtyBtn}>
+                                <MaterialCommunityIcons name="plus" size={14} color="#FFF" />
+                            </TouchableOpacity>
+                        </LinearGradient>
+                    ) : (
+                        <TouchableOpacity onPress={() => { triggerHaptic(); addToCart({ ...item, restaurantName: restaurant.name }); }} activeOpacity={0.85}>
+                            <LinearGradient colors={['#8B5CF6', '#6C3BF5']} start={{ x: 0, y: 0 }} end={{ x: 1, y: 0 }} style={rdStyles.addBtn}>
+                                <MaterialCommunityIcons name="plus" size={14} color="#FFF" />
+                                <RNText style={rdStyles.addBtnText}>ADD</RNText>
+                            </LinearGradient>
+                        </TouchableOpacity>
+                    )}
                 </View>
             </View>
-        </View>
+        </BlurView>
     );
 };
 
@@ -602,127 +668,152 @@ export const RestaurantDetailsScreen = ({ navigation, route }) => {
                 renderItem={({ item }) => <MenuItemCard item={item} restaurant={restaurant} />}
                 ListHeaderComponent={() => (
                     <>
-                        {/* Hero image with back button */}
+                        {/* Hero image with frosted back button */}
                         <View style={rdStyles.heroWrap}>
                             <Image source={{ uri: restaurant.image }} style={rdStyles.heroImage} resizeMode="cover" />
-                            <View style={rdStyles.heroGradient} />
+                            <LinearGradient
+                                colors={['rgba(0,0,0,0.35)', 'transparent', 'rgba(0,0,0,0.6)']}
+                                locations={[0, 0.4, 1]}
+                                style={StyleSheet.absoluteFill}
+                            />
                             <TouchableOpacity
                                 style={[rdStyles.backBtn, { top: insets.top + 8 }]}
                                 onPress={() => navigation.goBack()}
+                                activeOpacity={0.85}
                             >
-                                <MaterialCommunityIcons name="arrow-left" size={24} color="#FFF" />
+                                <BlurView intensity={60} tint="dark" style={rdStyles.backBtnBlur}>
+                                    <MaterialCommunityIcons name="arrow-left" size={22} color="#FFF" />
+                                </BlurView>
                             </TouchableOpacity>
                         </View>
 
-                        {/* Info card */}
-                        <View style={[rdStyles.infoCard, { backgroundColor: theme.colors.surface }]}>
+                        {/* Frosted glass info card */}
+                        <BlurView
+                            intensity={theme.dark ? 40 : 65}
+                            tint={theme.dark ? 'dark' : 'light'}
+                            style={[rdStyles.infoCard, {
+                                borderBottomWidth: 1,
+                                borderBottomColor: theme.dark ? 'rgba(255,255,255,0.07)' : 'rgba(108,59,245,0.12)',
+                                backgroundColor: theme.dark ? 'rgba(13,11,30,0.7)' : 'rgba(255,255,255,0.7)',
+                            }]}
+                        >
                             {/* Name + rating */}
                             <View style={rdStyles.nameRow}>
-                                <Text style={[rdStyles.restaurantName, { color: theme.colors.onSurface }]}>{restaurant.name}</Text>
-                                <View style={[rdStyles.ratingBubble, { backgroundColor: getRatingColor(restaurant.rating) }]}>
-                                    <MaterialCommunityIcons name="star" size={13} color="#FFF" />
-                                    <Text style={rdStyles.ratingText}>{restaurant.rating}</Text>
-                                </View>
+                                <RNText style={[rdStyles.restaurantName, { color: theme.colors.onSurface }]}>{restaurant.name}</RNText>
+                                <LinearGradient
+                                    colors={getRatingColor(restaurant.rating) === '#4CAF50' ? ['#22C55E', '#16A34A'] : getRatingColor(restaurant.rating) === '#FF9800' ? ['#F59E0B', '#D97706'] : ['#EF4444', '#DC2626']}
+                                    style={rdStyles.ratingBubble}
+                                >
+                                    <MaterialCommunityIcons name="star" size={12} color="#FFF" />
+                                    <RNText style={rdStyles.ratingText}>{restaurant.rating}</RNText>
+                                </LinearGradient>
                             </View>
-                            <Text style={[rdStyles.reviewCount, { color: theme.colors.onSurfaceVariant }]}>By {restaurant.reviews}</Text>
+                            <RNText style={[rdStyles.reviewCount, { color: theme.colors.onSurfaceVariant }]}>{restaurant.reviews} ratings</RNText>
+                            <RNText style={[rdStyles.tagsLine, { color: theme.colors.onSurfaceVariant }]}>{restaurant.tags.join(' · ')}</RNText>
 
-                            {/* Tags */}
-                            <Text style={[rdStyles.tagsLine, { color: theme.colors.onSurfaceVariant }]}>{restaurant.tags.join(' • ')}</Text>
-
-                            {/* Location + time row */}
+                            {/* Meta row */}
                             <View style={rdStyles.metaRow}>
-                                <View style={rdStyles.metaItem}>
-                                    <MaterialCommunityIcons name="map-marker-outline" size={15} color={theme.colors.onSurfaceVariant} />
-                                    <Text style={[rdStyles.metaText, { color: theme.colors.onSurfaceVariant }]}>{restaurant.distance}</Text>
-                                </View>
-                                <Text style={{ color: theme.colors.onSurfaceVariant, marginHorizontal: 6 }}>·</Text>
-                                <View style={rdStyles.metaItem}>
-                                    <MaterialCommunityIcons name="clock-outline" size={15} color={theme.colors.onSurfaceVariant} />
-                                    <Text style={[rdStyles.metaText, { color: theme.colors.onSurfaceVariant }]}>{restaurant.deliveryTime}-{restaurant.deliveryTime + 10} mins</Text>
-                                </View>
-                            </View>
-
-                            {/* Eco badge */}
-                            <View style={rdStyles.ecoBadge}>
-                                <MaterialCommunityIcons name="leaf" size={14} color="#4CAF50" />
-                                <Text style={rdStyles.ecoBadgeText}>Low plastic packaging</Text>
+                                <BlurView intensity={20} tint={theme.dark ? 'dark' : 'light'} style={[rdStyles.metaPill, { borderColor: theme.dark ? 'rgba(255,255,255,0.1)' : 'rgba(108,59,245,0.15)', backgroundColor: theme.dark ? 'rgba(255,255,255,0.06)' : 'rgba(108,59,245,0.07)' }]}>
+                                    <MaterialCommunityIcons name="clock-fast" size={13} color={theme.colors.primary} />
+                                    <RNText style={[rdStyles.metaText, { color: theme.colors.onSurface, fontWeight: '600' }]}>{restaurant.deliveryTime} min</RNText>
+                                </BlurView>
+                                <BlurView intensity={20} tint={theme.dark ? 'dark' : 'light'} style={[rdStyles.metaPill, { borderColor: theme.dark ? 'rgba(255,255,255,0.1)' : 'rgba(108,59,245,0.15)', backgroundColor: theme.dark ? 'rgba(255,255,255,0.06)' : 'rgba(108,59,245,0.07)', marginLeft: 8 }]}>
+                                    <MaterialCommunityIcons name="map-marker-outline" size={13} color={theme.colors.primary} />
+                                    <RNText style={[rdStyles.metaText, { color: theme.colors.onSurface, fontWeight: '600' }]}>{restaurant.distance}</RNText>
+                                </BlurView>
+                                <BlurView intensity={20} tint={theme.dark ? 'dark' : 'light'} style={[rdStyles.metaPill, { borderColor: theme.dark ? 'rgba(255,255,255,0.1)' : 'rgba(108,59,245,0.15)', backgroundColor: theme.dark ? 'rgba(255,255,255,0.06)' : 'rgba(108,59,245,0.07)', marginLeft: 8 }]}>
+                                    <MaterialCommunityIcons name="leaf" size={13} color="#22C55E" />
+                                    <RNText style={[rdStyles.metaText, { color: '#22C55E', fontWeight: '600' }]}>Eco</RNText>
+                                </BlurView>
                             </View>
 
                             {/* Offer strip */}
-                            <TouchableOpacity
-                                style={[rdStyles.offerStrip, { backgroundColor: theme.dark ? 'rgba(255,255,255,0.05)' : '#FFF8E1', borderColor: theme.dark ? 'rgba(255,255,255,0.1)' : '#FFE082' }]}
-                                onPress={() => setShowOffers(v => !v)}
-                            >
-                                <MaterialCommunityIcons name="tag-outline" size={18} color={theme.colors.primary} />
-                                <Text style={[rdStyles.offerStripText, { color: theme.colors.onSurface }]}>
-                                    {restaurant.offer || DUMMY_OFFERS[0]}
-                                </Text>
-                                <View style={rdStyles.offerCount}>
-                                    <Text style={[rdStyles.offerCountText, { color: theme.colors.primary }]}>{DUMMY_OFFERS.length} offers</Text>
-                                    <MaterialCommunityIcons name={showOffers ? 'chevron-up' : 'chevron-down'} size={16} color={theme.colors.primary} />
-                                </View>
+                            <TouchableOpacity onPress={() => setShowOffers(v => !v)} activeOpacity={0.85}>
+                                <BlurView intensity={20} tint={theme.dark ? 'dark' : 'light'}
+                                    style={[rdStyles.offerStrip, { borderColor: theme.dark ? 'rgba(255,165,0,0.25)' : 'rgba(255,165,0,0.35)', backgroundColor: theme.dark ? 'rgba(255,165,0,0.08)' : 'rgba(255,252,235,0.9)' }]}>
+                                    <View style={{ width: 32, height: 32, borderRadius: 16, backgroundColor: theme.colors.primary + '20', justifyContent: 'center', alignItems: 'center' }}>
+                                        <MaterialCommunityIcons name="tag" size={16} color={theme.colors.primary} />
+                                    </View>
+                                    <RNText style={[rdStyles.offerStripText, { color: theme.colors.onSurface }]}>{restaurant.offer || DUMMY_OFFERS[0]}</RNText>
+                                    <View style={{ flexDirection: 'row', alignItems: 'center', gap: 2 }}>
+                                        <RNText style={[rdStyles.offerCountText, { color: theme.colors.primary }]}>{DUMMY_OFFERS.length}</RNText>
+                                        <MaterialCommunityIcons name={showOffers ? 'chevron-up' : 'chevron-down'} size={16} color={theme.colors.primary} />
+                                    </View>
+                                </BlurView>
                             </TouchableOpacity>
 
                             {showOffers && (
-                                <View style={[rdStyles.offerList, { backgroundColor: theme.dark ? 'rgba(255,255,255,0.03)' : '#FFFDE7' }]}>
+                                <View style={{ marginTop: 8, gap: 6 }}>
                                     {DUMMY_OFFERS.map((offer, i) => (
-                                        <View key={i} style={rdStyles.offerListItem}>
-                                            <MaterialCommunityIcons name="ticket-percent-outline" size={16} color={theme.colors.primary} />
-                                            <Text style={[rdStyles.offerListText, { color: theme.colors.onSurface }]}>{offer}</Text>
-                                        </View>
+                                        <BlurView key={i} intensity={15} tint={theme.dark ? 'dark' : 'light'}
+                                            style={[rdStyles.offerListItem, { borderColor: theme.dark ? 'rgba(255,255,255,0.07)' : 'rgba(108,59,245,0.12)', backgroundColor: theme.dark ? 'rgba(255,255,255,0.04)' : 'rgba(108,59,245,0.05)' }]}>
+                                            <MaterialCommunityIcons name="ticket-percent" size={15} color={theme.colors.primary} />
+                                            <RNText style={[rdStyles.offerListText, { color: theme.colors.onSurface }]}>{offer}</RNText>
+                                        </BlurView>
                                     ))}
                                 </View>
                             )}
-                        </View>
+                        </BlurView>
 
                         {/* Filter pills */}
-                        <View style={[rdStyles.filtersRow, { backgroundColor: theme.colors.surface, borderBottomColor: theme.dark ? 'rgba(255,255,255,0.07)' : 'rgba(0,0,0,0.07)' }]}>
+                        <BlurView intensity={theme.dark ? 35 : 55} tint={theme.dark ? 'dark' : 'light'}
+                            style={[rdStyles.filtersRow, { borderBottomColor: theme.dark ? 'rgba(255,255,255,0.07)' : 'rgba(108,59,245,0.1)', backgroundColor: theme.dark ? 'rgba(13,11,30,0.5)' : 'rgba(255,255,255,0.5)' }]}>
                             <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ gap: 8, paddingHorizontal: 16, paddingVertical: 12 }}>
                                 {menuFilters.map(f => (
-                                    <TouchableOpacity
-                                        key={f}
-                                        style={[rdStyles.filterPill, { borderColor: activeFilter === f ? theme.colors.primary : (theme.dark ? 'rgba(255,255,255,0.2)' : 'rgba(0,0,0,0.15)'), backgroundColor: activeFilter === f ? theme.colors.primary + '22' : 'transparent' }]}
-                                        onPress={() => { triggerHaptic(); setActiveFilter(f); }}
-                                    >
-                                        {f === 'veg' && <MaterialCommunityIcons name="leaf" size={13} color={activeFilter === f ? theme.colors.primary : '#4CAF50'} style={{ marginRight: 4 }} />}
-                                        {f === 'non-veg' && <MaterialCommunityIcons name="food-drumstick" size={13} color={activeFilter === f ? theme.colors.primary : '#F44336'} style={{ marginRight: 4 }} />}
-                                        {f === 'highly ordered' && <MaterialCommunityIcons name="trending-up" size={13} color={activeFilter === f ? theme.colors.primary : '#FF6D00'} style={{ marginRight: 4 }} />}
-                                        <Text style={[rdStyles.filterPillText, { color: activeFilter === f ? theme.colors.primary : theme.colors.onSurface }]}>
-                                            {f.charAt(0).toUpperCase() + f.slice(1)}
-                                        </Text>
+                                    <TouchableOpacity key={f} onPress={() => { triggerHaptic(); setActiveFilter(f); }} activeOpacity={0.8}>
+                                        {activeFilter === f ? (
+                                            <LinearGradient colors={['#8B5CF6', '#6C3BF5']} start={{ x: 0, y: 0 }} end={{ x: 1, y: 0 }} style={rdStyles.filterPill}>
+                                                {f === 'veg' && <MaterialCommunityIcons name="leaf" size={12} color="#FFF" style={{ marginRight: 4 }} />}
+                                                {f === 'non-veg' && <MaterialCommunityIcons name="food-drumstick" size={12} color="#FFF" style={{ marginRight: 4 }} />}
+                                                {f === 'highly ordered' && <MaterialCommunityIcons name="trending-up" size={12} color="#FFF" style={{ marginRight: 4 }} />}
+                                                <RNText style={[rdStyles.filterPillText, { color: '#FFF' }]}>{f.charAt(0).toUpperCase() + f.slice(1)}</RNText>
+                                            </LinearGradient>
+                                        ) : (
+                                            <BlurView intensity={20} tint={theme.dark ? 'dark' : 'light'}
+                                                style={[rdStyles.filterPill, { borderColor: theme.dark ? 'rgba(255,255,255,0.12)' : 'rgba(108,59,245,0.18)', backgroundColor: theme.dark ? 'rgba(255,255,255,0.06)' : 'rgba(255,255,255,0.6)' }]}>
+                                                {f === 'veg' && <MaterialCommunityIcons name="leaf" size={12} color="#22C55E" style={{ marginRight: 4 }} />}
+                                                {f === 'non-veg' && <MaterialCommunityIcons name="food-drumstick" size={12} color="#EF4444" style={{ marginRight: 4 }} />}
+                                                {f === 'highly ordered' && <MaterialCommunityIcons name="trending-up" size={12} color="#FF6D00" style={{ marginRight: 4 }} />}
+                                                <RNText style={[rdStyles.filterPillText, { color: theme.colors.onSurface }]}>{f.charAt(0).toUpperCase() + f.slice(1)}</RNText>
+                                            </BlurView>
+                                        )}
                                     </TouchableOpacity>
                                 ))}
                             </ScrollView>
-                        </View>
+                        </BlurView>
 
                         {/* Search in menu */}
-                        <View style={{ paddingHorizontal: 16, paddingTop: 12, paddingBottom: 4, backgroundColor: theme.colors.surface }}>
-                            <Searchbar
-                                placeholder="Search in menu..."
-                                value={menuSearchQuery}
-                                onChangeText={setMenuSearchQuery}
-                                style={{ elevation: 0, backgroundColor: theme.dark ? 'rgba(255,255,255,0.07)' : 'rgba(0,0,0,0.05)', borderRadius: 10 }}
-                                inputStyle={{ fontSize: 14 }}
-                            />
+                        <View style={{ paddingHorizontal: 16, paddingTop: 12, paddingBottom: 8 }}>
+                            <BlurView intensity={theme.dark ? 25 : 50} tint={theme.dark ? 'dark' : 'light'}
+                                style={{ flexDirection: 'row', alignItems: 'center', borderRadius: 16, borderWidth: 1, borderColor: theme.dark ? 'rgba(255,255,255,0.1)' : 'rgba(108,59,245,0.18)', paddingHorizontal: 14, paddingVertical: 12, gap: 10, backgroundColor: theme.dark ? 'rgba(255,255,255,0.05)' : 'rgba(255,255,255,0.65)', overflow: 'hidden' }}>
+                                <MaterialCommunityIcons name="magnify" size={18} color={theme.colors.primary} />
+                                <TextInput
+                                    placeholder="Search in menu..."
+                                    value={menuSearchQuery}
+                                    onChangeText={setMenuSearchQuery}
+                                    style={{ flex: 1, fontSize: 14, color: theme.colors.onSurface, backgroundColor: 'transparent', paddingVertical: 0, height: 22 }}
+                                    placeholderTextColor={theme.colors.onSurfaceVariant}
+                                    underlineColor="transparent"
+                                    activeUnderlineColor="transparent"
+                                />
+                            </BlurView>
                         </View>
 
                         {/* Past orders section */}
                         {pastOrderItems.length > 0 && (
-                            <View style={[rdStyles.pastOrdersSection, { backgroundColor: theme.colors.surface, borderBottomColor: theme.dark ? 'rgba(255,255,255,0.07)' : 'rgba(0,0,0,0.07)' }]}>
-                                <Text style={[rdStyles.sectionHeading, { color: theme.colors.onSurface }]}>Your Orders and Collections</Text>
-                                <Text style={[rdStyles.sectionSubtitle, { color: theme.colors.onSurfaceVariant }]}>Past customisations are pre-selected</Text>
+                            <View style={{ paddingHorizontal: 16, paddingBottom: 8 }}>
+                                <RNText style={[rdStyles.sectionHeading, { color: theme.colors.onSurface, marginBottom: 4 }]}>Your Orders</RNText>
+                                <RNText style={[rdStyles.sectionSubtitle, { color: theme.colors.onSurfaceVariant }]}>Past customisations pre-selected</RNText>
                                 {pastOrderItems.map(item => (
                                     <PastOrderItem key={item.id} item={item} restaurant={restaurant} theme={theme} />
                                 ))}
                             </View>
                         )}
 
-                        <View style={[rdStyles.menuHeader, { backgroundColor: theme.colors.surface }]}>
-                            <Text style={[rdStyles.sectionHeading, { color: theme.colors.onSurface }]}>Menu</Text>
-                        </View>
+                        <RNText style={[rdStyles.sectionHeading, { color: theme.dark ? 'rgba(255,255,255,0.5)' : 'rgba(108,59,245,0.55)', paddingHorizontal: 16, paddingVertical: 10, fontSize: 12, letterSpacing: 0.8 }]}>MENU</RNText>
                     </>
                 )}
-                contentContainerStyle={{ paddingBottom: 100, backgroundColor: theme.colors.background }}
+                contentContainerStyle={{ paddingBottom: 160 }}
             />
             <CartFAB navigation={navigation} />
         </AppBackground>
@@ -732,26 +823,36 @@ export const RestaurantDetailsScreen = ({ navigation, route }) => {
 const CartItemCard = ({ item }) => {
     const { theme } = useAppTheme();
     const { addToCart, removeFromCart, removeItemFromCart } = useCart();
-    
+
     return (
-        <View style={[styles.cartItemContainer, {backgroundColor: theme.colors.surface, borderColor: theme.colors.surfaceVariant}]}>
-            <View style={{flex: 1, paddingRight: 16}}>
-                <View style={{flexDirection: 'row', alignItems: 'center'}}>
-                    <Text variant="titleMedium" style={{flex: 1, flexShrink: 1, color: theme.colors.onSurface}}>{item.name}</Text>
-                </View>
-                <Text variant="bodyMedium" style={{color: theme.colors.onSurfaceVariant, marginTop: 4}}>₹{item.price * item.quantity}</Text>
+        <BlurView intensity={theme.dark ? 20 : 40} tint={theme.dark ? 'dark' : 'light'}
+            style={[styles.cartItemContainer, {
+                borderColor: theme.dark ? 'rgba(255,255,255,0.08)' : 'rgba(108,59,245,0.12)',
+                backgroundColor: theme.dark ? 'rgba(255,255,255,0.04)' : 'rgba(255,255,255,0.55)',
+                marginBottom: 10, borderRadius: 16, borderWidth: 1, overflow: 'hidden',
+            }]}>
+            <View style={{ flex: 1, paddingRight: 12 }}>
+                <RNText style={{ fontSize: 15, fontWeight: '600', color: theme.colors.onSurface }}>{item.name}</RNText>
+                <RNText style={{ color: theme.colors.primary, fontWeight: '700', marginTop: 4, fontSize: 14 }}>₹{item.price * item.quantity}</RNText>
             </View>
-            <View style={{flexDirection: 'row', alignItems: 'center'}}>
-                <View style={[styles.quantityContainer, {backgroundColor: theme.colors.primary, marginRight: 8}]}>
-                    <IconButton icon="minus" onPress={() => removeFromCart(item)} iconColor={"#FFFFFF"} size={20} style={{margin: 0, height: 36, width: 36}}/>
-                    <Text style={{color: "#FFFFFF", fontWeight: 'bold', fontSize: 18}}>{item.quantity}</Text>
-                    <IconButton icon="plus" onPress={() => addToCart(item)} iconColor={"#FFFFFF"} size={20} style={{margin: 0, height: 36, width: 36}}/>
-                </View>
-                <IconButton icon="close-circle" onPress={() => removeItemFromCart(item.id)} iconColor={theme.colors.onSurfaceVariant} size={24}/>
+            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4 }}>
+                <LinearGradient colors={['#8B5CF6', '#6C3BF5']} start={{ x: 0, y: 0 }} end={{ x: 1, y: 0 }}
+                    style={{ flexDirection: 'row', alignItems: 'center', borderRadius: 20, height: 36, paddingHorizontal: 4 }}>
+                    <TouchableOpacity onPress={() => removeFromCart(item)} style={{ width: 32, height: 32, justifyContent: 'center', alignItems: 'center' }}>
+                        <MaterialCommunityIcons name="minus" size={16} color="#FFF" />
+                    </TouchableOpacity>
+                    <RNText style={{ color: '#FFF', fontWeight: '800', fontSize: 16, minWidth: 20, textAlign: 'center' }}>{item.quantity}</RNText>
+                    <TouchableOpacity onPress={() => addToCart(item)} style={{ width: 32, height: 32, justifyContent: 'center', alignItems: 'center' }}>
+                        <MaterialCommunityIcons name="plus" size={16} color="#FFF" />
+                    </TouchableOpacity>
+                </LinearGradient>
+                <TouchableOpacity onPress={() => removeItemFromCart(item.id)} style={{ width: 32, height: 32, justifyContent: 'center', alignItems: 'center' }}>
+                    <MaterialCommunityIcons name="close-circle" size={22} color={theme.dark ? 'rgba(255,255,255,0.35)' : 'rgba(0,0,0,0.3)'} />
+                </TouchableOpacity>
             </View>
-        </View>
-    )
-}
+        </BlurView>
+    );
+};
 
 export const CartScreen = ({ navigation }) => {
     const { theme } = useAppTheme();
@@ -1560,43 +1661,44 @@ const PastOrderItem = ({ item, restaurant, theme }) => {
 
 // ─── Home screen styles ──────────────────────────────────────────────────────
 const homeStyles = StyleSheet.create({
-    topBar: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingHorizontal: 16, paddingTop: 14, paddingBottom: 8 },
+    topBar: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingHorizontal: 16, paddingTop: 14, paddingBottom: 10, borderBottomWidth: 1, overflow: 'hidden' },
     topBarLocation: { fontSize: 16, fontWeight: '700', marginRight: 2 },
     topBarAddress: { fontSize: 12, marginTop: 1 },
-    searchRow: { flexDirection: 'row', alignItems: 'center', paddingHorizontal: 16, marginBottom: 12, gap: 10 },
+    avatarBtn: { width: 38, height: 38, borderRadius: 19, justifyContent: 'center', alignItems: 'center', marginLeft: 16 },
+    avatarLabel: { color: '#FFF', fontWeight: '800', fontSize: 16 },
+    searchRow: { flexDirection: 'row', alignItems: 'center', paddingHorizontal: 16, marginVertical: 12, gap: 10 },
     searchBox: { flex: 1 },
-    searchInner: { flexDirection: 'row', alignItems: 'center', borderRadius: 12, borderWidth: 1, paddingHorizontal: 12, paddingVertical: 12, gap: 8 },
-    searchPlaceholder: { fontSize: 14 },
-    vegBadge: { alignItems: 'center', borderRadius: 10, paddingHorizontal: 8, paddingVertical: 4 },
-    vegLabel: { fontSize: 11, fontWeight: '800', letterSpacing: 0.5 },
-    offlineBanner: { flexDirection: 'row', alignItems: 'center', marginHorizontal: 16, padding: 10, borderRadius: 10, marginBottom: 10 },
-    bannerSlide: { width: SCREEN_WIDTH, height: 150, flexDirection: 'row', alignItems: 'center', paddingHorizontal: 24, justifyContent: 'space-between' },
+    searchInner: { flexDirection: 'row', alignItems: 'center', borderRadius: 16, borderWidth: 1, paddingHorizontal: 14, paddingVertical: 12, gap: 8, overflow: 'hidden' },
+    searchPlaceholder: { fontSize: 14, flex: 1 },
+    vegToggle: { width: 44, height: 44, borderRadius: 22, borderWidth: 1.5, justifyContent: 'center', alignItems: 'center' },
+    offlineBanner: { flexDirection: 'row', alignItems: 'center', marginHorizontal: 16, padding: 10, borderRadius: 14, marginBottom: 10, borderWidth: 1, overflow: 'hidden' },
+    bannerSlide: { width: SCREEN_WIDTH - 32, height: 154, flexDirection: 'row', alignItems: 'center', paddingHorizontal: 22, justifyContent: 'space-between', borderRadius: 22, overflow: 'hidden' },
     bannerTextBlock: { flex: 1 },
-    bannerTitle: { fontSize: 12, fontWeight: '600', letterSpacing: 1, textTransform: 'uppercase', marginBottom: 2 },
+    bannerTitle: { fontSize: 11, fontWeight: '600', letterSpacing: 1, textTransform: 'uppercase', marginBottom: 2, color: 'rgba(255,255,255,0.65)' },
     bannerHighlight: { fontSize: 28, fontWeight: '900', letterSpacing: -0.5, marginBottom: 4 },
-    bannerSub: { fontSize: 13, marginBottom: 12 },
+    bannerSub: { fontSize: 12, marginBottom: 14, color: 'rgba(255,255,255,0.6)' },
     bannerBtn: { flexDirection: 'row', alignItems: 'center', alignSelf: 'flex-start', borderWidth: 1, borderRadius: 20, paddingVertical: 6, paddingHorizontal: 14, gap: 4 },
-    bannerBtnText: { fontSize: 13, fontWeight: '600' },
+    bannerBtnText: { fontSize: 12, fontWeight: '700' },
     bannerIconCircle: { width: 90, height: 90, borderRadius: 45, justifyContent: 'center', alignItems: 'center' },
     dotsRow: { flexDirection: 'row', justifyContent: 'center', gap: 6, paddingVertical: 10 },
-    dot: { width: 6, height: 6, borderRadius: 3 },
-    categoryScroll: { paddingHorizontal: 16, gap: 16, paddingBottom: 12, paddingTop: 4 },
+    dot: { height: 6, borderRadius: 3, transition: 'width 0.3s' },
+    categoryScroll: { paddingHorizontal: 16, gap: 18, paddingBottom: 12, paddingTop: 6 },
     categoryItem: { alignItems: 'center' },
     categoryImageWrap: { width: 64, height: 64, borderRadius: 32, overflow: 'hidden', marginBottom: 6 },
     categoryImage: { width: '100%', height: '100%' },
-    categoryLabel: { fontSize: 11, textAlign: 'center', fontWeight: '500' },
-    chipsRow: { paddingHorizontal: 16, gap: 8, paddingBottom: 10 },
-    filterChip: { flexDirection: 'row', alignItems: 'center', paddingHorizontal: 12, paddingVertical: 7, borderRadius: 20 },
-    chipLabel: { fontSize: 13, fontWeight: '500' },
-    sortChip: { flexDirection: 'row', alignItems: 'center', paddingVertical: 6, paddingHorizontal: 12, borderRadius: 20 },
-    sectionTitle: { fontSize: 12, fontWeight: '700', letterSpacing: 0.8, marginHorizontal: 16, marginTop: 16, marginBottom: 10 },
-    recommendedGrid: { flexDirection: 'row', flexWrap: 'wrap', paddingHorizontal: 12, gap: 8, marginBottom: 8 },
-    recommendedCell: { width: (SCREEN_WIDTH - 40) / 3, marginBottom: 4 },
-    recommendedImageWrap: { width: '100%', aspectRatio: 1, borderRadius: 10, overflow: 'hidden', marginBottom: 6, position: 'relative' },
+    categoryLabel: { fontSize: 11, textAlign: 'center', fontWeight: '600' },
+    chipsRow: { paddingHorizontal: 16, gap: 8, paddingBottom: 12, flexDirection: 'row' },
+    filterChip: { flexDirection: 'row', alignItems: 'center', paddingHorizontal: 14, paddingVertical: 8, borderRadius: 20, borderWidth: 1, overflow: 'hidden' },
+    chipLabel: { fontSize: 13, fontWeight: '600' },
+    sortChip: { flexDirection: 'row', alignItems: 'center', paddingVertical: 7, paddingHorizontal: 14, borderRadius: 20, borderWidth: 1, overflow: 'hidden' },
+    sectionTitle: { fontSize: 11, fontWeight: '700', letterSpacing: 1, marginHorizontal: 16, marginTop: 16, marginBottom: 10 },
+    recommendedGrid: { flexDirection: 'row', flexWrap: 'wrap', paddingHorizontal: 12, gap: 10, marginBottom: 8 },
+    recommendedCell: { width: (SCREEN_WIDTH - 44) / 3, marginBottom: 4 },
+    recommendedImageWrap: { width: '100%', aspectRatio: 1, borderRadius: 16, overflow: 'hidden', marginBottom: 6, position: 'relative', borderWidth: 1 },
     recommendedImage: { width: '100%', height: '100%' },
     recommendedOfferTag: { position: 'absolute', bottom: 0, left: 0, right: 0, backgroundColor: 'rgba(0,0,0,0.55)', paddingHorizontal: 4, paddingVertical: 3 },
     recommendedOfferText: { color: '#FFF', fontSize: 9, fontWeight: '600' },
-    recommendedRating: { position: 'absolute', top: 6, left: 6, flexDirection: 'row', alignItems: 'center', backgroundColor: 'rgba(0,0,0,0.6)', borderRadius: 6, paddingHorizontal: 5, paddingVertical: 2, gap: 2 },
+    recommendedRating: { position: 'absolute', top: 6, left: 6, flexDirection: 'row', alignItems: 'center', backgroundColor: 'rgba(0,0,0,0.5)', borderRadius: 8, paddingHorizontal: 5, paddingVertical: 2, gap: 2 },
     recommendedRatingText: { color: '#FFF', fontSize: 10, fontWeight: '700' },
     recommendedName: { fontSize: 12, fontWeight: '600', marginBottom: 1 },
     recommendedMeta: { fontSize: 11, marginLeft: 3 },
@@ -1605,50 +1707,46 @@ const homeStyles = StyleSheet.create({
 // ─── Restaurant Details screen styles ───────────────────────────────────────
 const rdStyles = StyleSheet.create({
     heroWrap: { position: 'relative' },
-    heroImage: { width: '100%', height: 260 },
-    heroGradient: { position: 'absolute', bottom: 0, left: 0, right: 0, height: 80, backgroundColor: 'rgba(0,0,0,0.3)' },
-    backBtn: { position: 'absolute', left: 12, width: 38, height: 38, borderRadius: 19, backgroundColor: 'rgba(0,0,0,0.45)', justifyContent: 'center', alignItems: 'center' },
-    infoCard: { paddingHorizontal: 16, paddingTop: 16, paddingBottom: 8 },
+    heroImage: { width: '100%', height: 280 },
+    backBtn: { position: 'absolute', left: 12, overflow: 'hidden' },
+    backBtnBlur: { width: 42, height: 42, borderRadius: 21, overflow: 'hidden', justifyContent: 'center', alignItems: 'center', borderWidth: 1, borderColor: 'rgba(255,255,255,0.2)' },
+    infoCard: { paddingHorizontal: 18, paddingTop: 18, paddingBottom: 12, overflow: 'hidden' },
     nameRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 4 },
     restaurantName: { fontSize: 22, fontWeight: '800', flex: 1, marginRight: 12 },
-    ratingBubble: { flexDirection: 'row', alignItems: 'center', borderRadius: 6, paddingHorizontal: 8, paddingVertical: 5, gap: 4 },
-    ratingText: { color: '#FFF', fontWeight: '700', fontSize: 14 },
-    reviewCount: { fontSize: 12, marginBottom: 6 },
-    tagsLine: { fontSize: 13, marginBottom: 10 },
-    metaRow: { flexDirection: 'row', alignItems: 'center', marginBottom: 12 },
+    ratingBubble: { flexDirection: 'row', alignItems: 'center', borderRadius: 10, paddingHorizontal: 9, paddingVertical: 6, gap: 4 },
+    ratingText: { color: '#FFF', fontWeight: '800', fontSize: 14 },
+    reviewCount: { fontSize: 12, marginBottom: 4 },
+    tagsLine: { fontSize: 13, marginBottom: 12 },
+    metaRow: { flexDirection: 'row', alignItems: 'center', marginBottom: 14, flexWrap: 'wrap', gap: 8 },
+    metaPill: { flexDirection: 'row', alignItems: 'center', gap: 5, paddingHorizontal: 12, paddingVertical: 7, borderRadius: 20, borderWidth: 1, overflow: 'hidden' },
     metaItem: { flexDirection: 'row', alignItems: 'center', gap: 4 },
     metaText: { fontSize: 13 },
-    ecoBadge: { flexDirection: 'row', alignItems: 'center', gap: 5, marginBottom: 12 },
-    ecoBadgeText: { fontSize: 12, color: '#4CAF50', fontWeight: '500' },
-    offerStrip: { flexDirection: 'row', alignItems: 'center', borderWidth: 1, borderRadius: 8, paddingHorizontal: 12, paddingVertical: 10, gap: 8, marginBottom: 4 },
-    offerStripText: { flex: 1, fontSize: 13, fontWeight: '500' },
-    offerCount: { flexDirection: 'row', alignItems: 'center', gap: 2 },
-    offerCountText: { fontSize: 13, fontWeight: '600' },
-    offerList: { borderRadius: 8, marginTop: 4, marginBottom: 4, paddingVertical: 8, paddingHorizontal: 12 },
-    offerListItem: { flexDirection: 'row', alignItems: 'center', gap: 8, paddingVertical: 6 },
-    offerListText: { fontSize: 13 },
-    filtersRow: { borderBottomWidth: 1 },
-    filterPill: { flexDirection: 'row', alignItems: 'center', borderWidth: 1, borderRadius: 20, paddingHorizontal: 12, paddingVertical: 7 },
-    filterPillText: { fontSize: 13, fontWeight: '500' },
-    pastOrdersSection: { paddingHorizontal: 16, paddingTop: 14, paddingBottom: 4, borderBottomWidth: 1, marginBottom: 4 },
+    offerStrip: { flexDirection: 'row', alignItems: 'center', borderWidth: 1, borderRadius: 14, paddingHorizontal: 12, paddingVertical: 10, gap: 10, marginBottom: 4, overflow: 'hidden' },
+    offerStripText: { flex: 1, fontSize: 13, fontWeight: '600' },
+    offerCountText: { fontSize: 13, fontWeight: '700' },
+    offerListItem: { flexDirection: 'row', alignItems: 'center', gap: 10, paddingVertical: 8, paddingHorizontal: 12, borderRadius: 12, borderWidth: 1, overflow: 'hidden' },
+    offerListText: { fontSize: 13, flex: 1 },
+    filtersRow: { borderBottomWidth: 1, overflow: 'hidden' },
+    filterPill: { flexDirection: 'row', alignItems: 'center', borderWidth: 1, borderRadius: 20, paddingHorizontal: 14, paddingVertical: 8, overflow: 'hidden' },
+    filterPillText: { fontSize: 13, fontWeight: '600' },
     sectionHeading: { fontSize: 16, fontWeight: '700', marginBottom: 2 },
     sectionSubtitle: { fontSize: 12, marginBottom: 12 },
     pastOrderItem: { flexDirection: 'row', alignItems: 'center', paddingVertical: 10, borderBottomWidth: 1 },
-    pastOrderImage: { width: 44, height: 44, borderRadius: 8 },
+    pastOrderImage: { width: 44, height: 44, borderRadius: 10 },
     pastOrderName: { fontSize: 14, fontWeight: '600', marginBottom: 2 },
     pastOrderPrice: { fontSize: 13 },
-    menuHeader: { paddingHorizontal: 16, paddingVertical: 12 },
-    menuItem: { flexDirection: 'row', alignItems: 'center', paddingHorizontal: 16, paddingVertical: 14, borderBottomWidth: 1 },
+    menuItem: { flexDirection: 'row', alignItems: 'center', paddingHorizontal: 16, paddingVertical: 14, marginHorizontal: 12, marginBottom: 10, borderRadius: 18, borderWidth: 1, overflow: 'hidden' },
     menuItemName: { fontSize: 15, fontWeight: '600', marginBottom: 4 },
-    menuItemPrice: { fontSize: 14, fontWeight: '500', marginBottom: 2 },
+    menuItemPrice: { fontSize: 14, fontWeight: '700', marginBottom: 2 },
     menuItemRight: { width: 110, alignItems: 'center' },
-    menuItemImage: { width: 100, height: 90, borderRadius: 10, marginBottom: 6 },
-    menuItemAction: { position: 'absolute', bottom: 0 },
-    qtyBox: { flexDirection: 'row', alignItems: 'center', borderRadius: 8, height: 36, width: 100, justifyContent: 'space-between' },
+    menuItemImage: { width: 100, height: 90, borderRadius: 14 },
+    menuItemAction: { position: 'absolute', bottom: -6 },
+    qtyBox: { flexDirection: 'row', alignItems: 'center', borderRadius: 20, height: 36, width: 100, justifyContent: 'space-between', overflow: 'hidden' },
     qtyBtn: { width: 36, height: 36, justifyContent: 'center', alignItems: 'center' },
-    qtyText: { color: '#FFF', fontWeight: 'bold', fontSize: 16 },
-    addBtn: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', borderRadius: 8, height: 34, width: 100, gap: 4 },
+    qtyText: { color: '#FFF', fontWeight: '800', fontSize: 15 },
+    addBtn: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', borderRadius: 20, height: 34, width: 100, gap: 4, overflow: 'hidden' },
     addBtnText: { color: '#FFF', fontWeight: '700', fontSize: 13 },
-    highlyOrderedBadge: { flexDirection: 'row', alignItems: 'center', gap: 3, marginLeft: 8 },
-    highlyOrderedText: { fontSize: 11, color: '#FF6D00', fontWeight: '600' },
-});
+    highlyOrderedBadge: { flexDirection: 'row', alignItems: 'center', gap: 3, paddingHorizontal: 6, paddingVertical: 2, borderRadius: 8 },
+    highlyOrderedText: { fontSize: 11, color: '#FF6D00', fontWeight: '700' },
+});
+

@@ -1,203 +1,385 @@
 import React, { useState } from 'react';
-import { View, TouchableOpacity, Dimensions, StyleSheet, Text as RNText, TextInput as RNTextInput, Image, Pressable, FlatList, ScrollView } from 'react-native';
-import { Card, Text, FAB, Avatar, Switch, Searchbar, List, Divider, Button } from 'react-native-paper';
+import { View, TouchableOpacity, Dimensions, StyleSheet, Text as RNText, TextInput as RNTextInput, Image, Pressable } from 'react-native';
+import { Text, FAB } from 'react-native-paper';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import Animated, { FadeInUp, FadeInDown } from 'react-native-reanimated';
 import { BlurView } from 'expo-blur';
+import { LinearGradient } from 'expo-linear-gradient';
 import * as Haptics from 'expo-haptics';
 
 import { useUser, useAppTheme, useCart } from './context';
 import { ALL_RESTAURANTS } from './data';
 
 const triggerHaptic = () => Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+const { width: SW } = Dimensions.get('window');
 
-export const GlassCard = ({ children, style, blur }) => {
+// ─── AppBackground ────────────────────────────────────────────────────────────
+// Colorful gradient backdrop — the frosted glass layers sit on top of this.
+export const AppBackground = ({ children }) => {
     const { theme } = useAppTheme();
-    const Component = blur ? BlurView : View;
-    
-    const blurProps = blur ? { 
-        intensity: 90, 
-        tint: theme.dark ? 'dark' : 'light' 
-    } : {};
-    
-    const cardStyle = [
-        styles.glassCard,
-        theme.dark ? styles.glassCardDark : styles.glassCardLight,
-        style
-    ];
+    const gradientColors = theme.dark
+        ? ['#0D0B1E', '#150F2E', '#1A1040', '#0D0B1E']
+        : ['#F0EBFF', '#E8E0FF', '#F5F3FF', '#EBF0FF'];
 
     return (
-        <Component style={cardStyle} {...blurProps}>
+        <LinearGradient
+            colors={gradientColors}
+            locations={[0, 0.35, 0.7, 1]}
+            style={{ flex: 1 }}
+        >
             {children}
-        </Component>
+        </LinearGradient>
     );
 };
 
-export const GlassInput = ({ label, value, onChangeText, keyboardType, maxLength, error, hideLabelInDarkMode }) => {
+// ─── GlassCard ───────────────────────────────────────────────────────────────
+// Frosted glass pill card — the primary surface in the UI.
+export const GlassCard = ({ children, style, onPress }) => {
+    const { theme } = useAppTheme();
+
+    const glassBg = theme.dark
+        ? 'rgba(255, 255, 255, 0.07)'
+        : 'rgba(255, 255, 255, 0.65)';
+    const glassBorder = theme.dark
+        ? 'rgba(255, 255, 255, 0.12)'
+        : 'rgba(255, 255, 255, 0.9)';
+
+    const content = (
+        <BlurView
+            intensity={theme.dark ? 40 : 60}
+            tint={theme.dark ? 'dark' : 'light'}
+            style={[
+                cStyles.glassCard,
+                {
+                    backgroundColor: glassBg,
+                    borderColor: glassBorder,
+                },
+                style,
+            ]}
+        >
+            {children}
+        </BlurView>
+    );
+
+    if (onPress) {
+        return <TouchableOpacity onPress={onPress} activeOpacity={0.85}>{content}</TouchableOpacity>;
+    }
+    return content;
+};
+
+// ─── GlassInput ──────────────────────────────────────────────────────────────
+export const GlassInput = ({ label, value, onChangeText, keyboardType, maxLength, error }) => {
     const [isFocused, setIsFocused] = useState(false);
     const { theme } = useAppTheme();
-    
-    const containerStyle = [
-        styles.glassInputContainer,
-        theme.dark ? styles.glassInputContainerDark : styles.glassInputContainerLight,
-        error ? styles.errorBorder : {}
-    ];
 
-    // FIX: This logic now hides the label in dark mode if the prop is passed
-    const showLabel = !(hideLabelInDarkMode && theme.dark && value);
+    const borderColor = error
+        ? '#FF5252'
+        : isFocused
+            ? theme.colors.primary
+            : theme.dark ? 'rgba(255,255,255,0.15)' : 'rgba(108,59,245,0.2)';
 
     return (
-        <View style={containerStyle}>
-            <Animated.Text 
-                style={[
-                    styles.glassInputLabel, 
-                    { color: theme.dark ? (isFocused ? '#FFFFFF' : '#E0E0E0') : (isFocused ? theme.colors.primary : theme.colors.onSurfaceVariant) }, 
-                    (isFocused || value) && styles.glassInputLabelFocused,
-                    value && !isFocused ? { opacity: 0 } : { opacity: 1 },
-                    !showLabel && { opacity: 0 }
-                ]}
-                pointerEvents="none" 
-            >
+        <BlurView
+            intensity={theme.dark ? 30 : 50}
+            tint={theme.dark ? 'dark' : 'light'}
+            style={[
+                cStyles.glassInputWrap,
+                {
+                    borderColor,
+                    backgroundColor: theme.dark ? 'rgba(255,255,255,0.06)' : 'rgba(255,255,255,0.7)',
+                },
+            ]}
+        >
+            <RNText style={[
+                cStyles.glassInputLabel,
+                {
+                    color: isFocused ? theme.colors.primary : theme.dark ? 'rgba(255,255,255,0.5)' : 'rgba(108,59,245,0.55)',
+                    top: (isFocused || value) ? 6 : 16,
+                    fontSize: (isFocused || value) ? 11 : 15,
+                },
+            ]}>
                 {label}
-            </Animated.Text>
+            </RNText>
             <RNTextInput
                 value={value}
                 onChangeText={onChangeText}
                 keyboardType={keyboardType}
                 maxLength={maxLength}
-                style={[styles.glassInput, {color: theme.dark ? '#FFFFFF' : theme.colors.onSurface}]}
+                style={[cStyles.glassInput, { color: theme.dark ? '#FFFFFF' : theme.colors.onSurface, paddingTop: (isFocused || value) ? 22 : 14 }]}
                 onFocus={() => setIsFocused(true)}
                 onBlur={() => setIsFocused(false)}
-                placeholderTextColor={theme.dark ? '#E0E0E0' : theme.colors.onSurfaceVariant}
+                placeholderTextColor="transparent"
             />
-        </View>
+        </BlurView>
     );
 };
 
+// ─── GlassButton ─────────────────────────────────────────────────────────────
+// A premium pill-shaped gradient button.
 export const GlassButton = ({ onPress, title, icon, style, disabled }) => {
     const { theme } = useAppTheme();
-    const buttonStyle = [
-        styles.glassButton,
-        theme.dark ? styles.glassButtonDark : styles.glassButtonLight,
-        disabled && { backgroundColor: theme.colors.surfaceDisabled },
-        style
-    ];
-    
+
+    const gradientColors = disabled
+        ? [theme.colors.surfaceDisabled, theme.colors.surfaceDisabled]
+        : theme.dark
+            ? ['#9D7BFF', '#6C3BF5']
+            : ['#8B5CF6', '#6C3BF5'];
+
     const handlePress = () => {
-        triggerHaptic();
-        onPress();
-    }
+        if (!disabled) {
+            triggerHaptic();
+            onPress();
+        }
+    };
 
     return (
-        <TouchableOpacity onPress={handlePress} style={buttonStyle} disabled={disabled}>
-            {icon && <MaterialCommunityIcons name={icon} color={disabled ? theme.colors.onSurfaceDisabled : "#FFFFFF"} size={20} style={{marginRight: 8}} />}
-            <Text style={[styles.glassButtonLabel, {color: disabled ? theme.colors.onSurfaceDisabled : "#FFFFFF"}]}>{title}</Text>
+        <TouchableOpacity onPress={handlePress} disabled={disabled} activeOpacity={0.82} style={style}>
+            <LinearGradient
+                colors={gradientColors}
+                start={{ x: 0, y: 0 }}
+                end={{ x: 1, y: 0 }}
+                style={cStyles.glassButton}
+            >
+                {icon && <MaterialCommunityIcons name={icon} color="#FFFFFF" size={20} style={{ marginRight: 8 }} />}
+                <RNText style={cStyles.glassButtonLabel}>{title}</RNText>
+            </LinearGradient>
         </TouchableOpacity>
     );
 };
 
-export const AppBackground = ({ children }) => {
-    const { theme } = useAppTheme();
-
-    const backgroundStyle = {
-        flex: 1,
-        backgroundColor: theme.colors.background,
-    };
-
-    return (
-        <View style={backgroundStyle}>
-            {children}
-        </View>
-    );
-};
-
+// ─── BigRestaurantCard ────────────────────────────────────────────────────────
 export const BigRestaurantCard = ({ restaurant, theme, navigation, index }) => {
     const { favorites, toggleFavorite } = useUser();
     const isFavorite = favorites.includes(restaurant.id);
 
-    const glassStyle = theme.dark
-        ? { backgroundColor: 'rgba(255, 255, 255, 0.08)', borderColor: 'rgba(255, 255, 255, 0.2)', borderWidth: 1 }
-        : { backgroundColor: 'rgba(255, 255, 255, 0.7)', borderColor: 'rgba(255, 255, 255, 0.8)', borderWidth: 1 };
+    const getRatingColor = (r) => r >= 4 ? '#22C55E' : r >= 3 ? '#F59E0B' : '#EF4444';
 
-    const handleFavoriteToggle = () => {
-        triggerHaptic();
-        toggleFavorite(restaurant.id);
-    }
+    const handleFav = () => { triggerHaptic(); toggleFavorite(restaurant.id); };
+    const handlePress = () => { triggerHaptic(); navigation.navigate('RestaurantDetails', { restaurant }); };
 
     return (
-        <TouchableOpacity onPress={() => { triggerHaptic(); navigation.navigate('RestaurantDetails', { restaurant }); }}>
-            <Animated.View entering={FadeInDown.delay(index * 100).duration(400)}>
-                <Card style={[{ borderRadius: 16, overflow: 'hidden', marginHorizontal: 16, marginBottom: 16, backgroundColor: 'transparent' }, glassStyle]}>
-                    <Card.Cover source={{ uri: restaurant.image }} style={{ height: 180 }} />
-                    <TouchableOpacity onPress={handleFavoriteToggle} style={{ position: 'absolute', top: 12, right: 12, backgroundColor: 'rgba(0,0,0,0.4)', borderRadius: 18, padding: 6 }}>
-                        <MaterialCommunityIcons name={isFavorite ? "heart" : "heart-outline"} color={isFavorite ? theme.colors.primary : "#fff"} size={24} />
-                    </TouchableOpacity>
-                    <Card.Title
-                        title={restaurant.name}
-                        titleStyle={{ fontWeight: 'bold', fontSize: 20, color: theme.colors.onSurface }}
-                        subtitle={`${restaurant.rating} ★ (${restaurant.reviews}) • ${restaurant.deliveryTime}min • ${restaurant.distance}`}
-                        subtitleStyle={{ color: theme.colors.onSurfaceVariant, marginTop: 4 }}
-                        right={() => restaurant.offer ? (<Text style={{ marginRight: 16, color: theme.colors.primary, fontWeight: 'bold' }}>{restaurant.offer}</Text>) : null}
-                    />
-                </Card>
-            </Animated.View>
+        <Animated.View entering={FadeInDown.delay(index * 80).duration(400)} style={bigStyles.wrapper}>
+            <TouchableOpacity onPress={handlePress} activeOpacity={0.92}>
+                <BlurView
+                    intensity={theme.dark ? 30 : 55}
+                    tint={theme.dark ? 'dark' : 'light'}
+                    style={[bigStyles.card, {
+                        borderColor: theme.dark ? 'rgba(255,255,255,0.1)' : 'rgba(255,255,255,0.85)',
+                        backgroundColor: theme.dark ? 'rgba(255,255,255,0.05)' : 'rgba(255,255,255,0.55)',
+                    }]}
+                >
+                    {/* Cover image */}
+                    <View style={bigStyles.imageWrap}>
+                        <Image source={{ uri: restaurant.image }} style={bigStyles.image} resizeMode="cover" />
+                        <LinearGradient
+                            colors={['transparent', 'rgba(0,0,0,0.55)']}
+                            style={bigStyles.imageOverlay}
+                        />
+                        {/* Favourite button */}
+                        <TouchableOpacity onPress={handleFav} style={bigStyles.favBtn}>
+                            <BlurView intensity={60} tint="dark" style={bigStyles.favBlur}>
+                                <MaterialCommunityIcons
+                                    name={isFavorite ? 'heart' : 'heart-outline'}
+                                    color={isFavorite ? '#FF6B6B' : '#FFFFFF'}
+                                    size={18}
+                                />
+                            </BlurView>
+                        </TouchableOpacity>
+                        {/* Offer badge */}
+                        {restaurant.offer && (
+                            <View style={bigStyles.offerPill}>
+                                <MaterialCommunityIcons name="tag" size={11} color="#FFF" style={{ marginRight: 3 }} />
+                                <RNText style={bigStyles.offerText}>{restaurant.offer}</RNText>
+                            </View>
+                        )}
+                        {/* Rating bottom-left */}
+                        <View style={[bigStyles.ratingPill, { backgroundColor: getRatingColor(restaurant.rating) }]}>
+                            <MaterialCommunityIcons name="star" size={12} color="#FFF" style={{ marginRight: 3 }} />
+                            <RNText style={bigStyles.ratingText}>{restaurant.rating}</RNText>
+                        </View>
+                    </View>
+
+                    {/* Info */}
+                    <View style={bigStyles.info}>
+                        <RNText style={[bigStyles.name, { color: theme.colors.onSurface }]} numberOfLines={1}>{restaurant.name}</RNText>
+                        <View style={bigStyles.metaRow}>
+                            <View style={bigStyles.metaItem}>
+                                <MaterialCommunityIcons name="clock-outline" size={13} color={theme.colors.onSurfaceVariant} />
+                                <RNText style={[bigStyles.metaText, { color: theme.colors.onSurfaceVariant }]}>{restaurant.deliveryTime} min</RNText>
+                            </View>
+                            <View style={bigStyles.metaDot} />
+                            <View style={bigStyles.metaItem}>
+                                <MaterialCommunityIcons name="map-marker-outline" size={13} color={theme.colors.onSurfaceVariant} />
+                                <RNText style={[bigStyles.metaText, { color: theme.colors.onSurfaceVariant }]}>{restaurant.distance}</RNText>
+                            </View>
+                        </View>
+                        <RNText style={[bigStyles.tags, { color: theme.colors.onSurfaceVariant }]} numberOfLines={1}>{restaurant.tags.join(' · ')}</RNText>
+                    </View>
+                </BlurView>
+            </TouchableOpacity>
+        </Animated.View>
+    );
+};
+
+// ─── RecommendedCard ──────────────────────────────────────────────────────────
+export const RecommendedCard = ({ restaurant, theme, navigation }) => {
+    return (
+        <TouchableOpacity
+            onPress={() => { triggerHaptic(); navigation.navigate('RestaurantDetails', { restaurant: ALL_RESTAURANTS.find(r => r.id === restaurant.id) || restaurant }); }}
+            activeOpacity={0.88}
+            style={{ width: (SW - 48) / 2.3 }}
+        >
+            <BlurView
+                intensity={theme.dark ? 30 : 55}
+                tint={theme.dark ? 'dark' : 'light'}
+                style={[recStyles.card, {
+                    borderColor: theme.dark ? 'rgba(255,255,255,0.1)' : 'rgba(255,255,255,0.85)',
+                    backgroundColor: theme.dark ? 'rgba(255,255,255,0.05)' : 'rgba(255,255,255,0.6)',
+                }]}
+            >
+                <View style={recStyles.imageWrap}>
+                    <Image source={{ uri: restaurant.image }} style={recStyles.image} resizeMode="cover" />
+                    <LinearGradient colors={['transparent', 'rgba(0,0,0,0.5)']} style={StyleSheet.absoluteFill} />
+                    <View style={[recStyles.ratingPill, { backgroundColor: restaurant.rating >= 4 ? '#22C55E' : '#F59E0B' }]}>
+                        <MaterialCommunityIcons name="star" size={10} color="#FFF" style={{ marginRight: 2 }} />
+                        <RNText style={recStyles.ratingText}>{restaurant.rating}</RNText>
+                    </View>
+                </View>
+                <View style={recStyles.info}>
+                    <RNText style={[recStyles.name, { color: theme.colors.onSurface }]} numberOfLines={1}>{restaurant.name}</RNText>
+                    <RNText style={[recStyles.time, { color: theme.colors.onSurfaceVariant }]}>{restaurant.deliveryTime} min</RNText>
+                </View>
+            </BlurView>
         </TouchableOpacity>
     );
 };
 
-export const RecommendedCard = ({ restaurant, theme, navigation }) => {
-     const glassStyle = theme.dark
-        ? { backgroundColor: 'rgba(255, 255, 255, 0.08)', borderColor: 'rgba(255, 255, 255, 0.2)', borderWidth: 1 }
-        : { backgroundColor: 'rgba(255, 255, 255, 0.7)', borderColor: 'rgba(255, 255, 255, 0.8)', borderWidth: 1 };
-
-    return (
-    <TouchableOpacity onPress={() => { triggerHaptic(); navigation.navigate('RestaurantDetails', { restaurant: ALL_RESTAURANTS.find(r => r.id === restaurant.id) || ALL_RESTAURANTS[0] }); }}>
-        <Animated.View entering={FadeInUp.duration(500)} style={{ width: (Dimensions.get('window').width - 48) / 2.3, borderRadius: 12, overflow: 'hidden' }}>
-            <Card style={glassStyle}>
-                <Card.Cover source={{ uri: restaurant.image }} style={{ height: 100 }} />
-                <Card.Title title={restaurant.name} titleStyle={{ fontWeight: 'bold', color: theme.colors.onSurface, fontSize: 14 }} titleNumberOfLines={1} />
-            </Card>
-        </Animated.View>
-    </TouchableOpacity>
-)};
-
+// ─── CartFAB ──────────────────────────────────────────────────────────────────
 export const CartFAB = ({ navigation }) => {
     const { cart, cartTotal, cartItemCount } = useCart();
-    const theme = useAppTheme().theme;
-    
-    const fabGlassStyle = theme.dark
-        ? { backgroundColor: theme.colors.surface, borderColor: theme.colors.surfaceVariant, borderWidth: 1}
-        : { backgroundColor: 'rgba(247, 244, 233, 0.8)', borderColor: 'rgba(34, 17, 18, 0.2)', borderWidth: 1};
+    const { theme } = useAppTheme();
 
     if (cart.length === 0) return null;
+
     return (
-        <FAB
-            icon="cart"
-            label={`View Cart (${cartItemCount}) - ₹${cartTotal}`}
-            style={[styles.fab, fabGlassStyle]}
+        <TouchableOpacity
             onPress={() => navigation.navigate('Cart')}
-            color={theme.colors.primary}
-            variant='secondary'
-        />
+            activeOpacity={0.9}
+            style={fabStyles.wrapper}
+        >
+            <BlurView intensity={80} tint="dark" style={fabStyles.blurPill}>
+                <LinearGradient
+                    colors={['rgba(108,59,245,0.95)', 'rgba(157,123,255,0.95)']}
+                    start={{ x: 0, y: 0 }}
+                    end={{ x: 1, y: 0 }}
+                    style={fabStyles.gradient}
+                >
+                    <View style={fabStyles.leftSection}>
+                        <View style={fabStyles.countBadge}>
+                            <RNText style={fabStyles.countText}>{cartItemCount}</RNText>
+                        </View>
+                        <RNText style={fabStyles.label}>View Cart</RNText>
+                    </View>
+                    <View style={fabStyles.rightSection}>
+                        <RNText style={fabStyles.price}>₹{cartTotal}</RNText>
+                        <MaterialCommunityIcons name="chevron-right" size={20} color="#FFF" />
+                    </View>
+                </LinearGradient>
+            </BlurView>
+        </TouchableOpacity>
     );
 };
 
-const styles = StyleSheet.create({
-    fab: { position: 'absolute', margin: 16, right: 0, bottom: 0 },
-    glassCard: { padding: 16, borderRadius: 20, alignItems: 'center', marginBottom: 16, borderWidth: 1 },
-    glassCardDark: { backgroundColor: 'rgba(255, 255, 255, 0.1)', borderColor: 'rgba(255, 255, 255, 0.2)' },
-    glassCardLight: { backgroundColor: 'rgba(255, 255, 255, 0.7)', borderColor: 'rgba(255, 255, 255, 0.3)' },
-    glassInputContainer: { width: '100%', borderRadius: 12, borderWidth: 1, height: 56 },
-    glassInputContainerDark: { backgroundColor: 'rgba(255, 255, 255, 0.1)', borderColor: 'rgba(255, 255, 255, 0.2)' },
-    glassInputContainerLight: { backgroundColor: 'rgba(255, 255, 255, 0.5)', borderColor: 'rgba(0, 0, 0, 0.1)' },
-    glassInputLabel: { position: 'absolute', left: 16, top: 16, fontSize: 16 },
-    glassInputLabelFocused: { top: 6, fontSize: 12 },
-    glassInput: { height: '100%', width: '100%', fontSize: 16, paddingHorizontal: 16 },
-    errorBorder: {
-        borderColor: 'rgba(255, 82, 82, 0.7)', 
+// ─── Styles ───────────────────────────────────────────────────────────────────
+const cStyles = StyleSheet.create({
+    glassCard: {
+        borderRadius: 24,
+        borderWidth: 1,
+        padding: 20,
+        overflow: 'hidden',
+        marginBottom: 16,
+        alignItems: 'center',
     },
-    glassButton: { flexDirection: 'row', width: '100%', paddingVertical: 14, paddingHorizontal: 20, borderRadius: 20, justifyContent: 'center', alignItems: 'center' },
-    glassButtonDark: { backgroundColor: '#9D7BFF' },
-    glassButtonLight: { backgroundColor: 'rgba(108, 59, 245, 0.9)' },
-    glassButtonLabel: { fontSize: 18, fontWeight: 'bold' }
+    glassInputWrap: {
+        width: '100%',
+        borderRadius: 16,
+        borderWidth: 1.5,
+        height: 60,
+        overflow: 'hidden',
+        marginBottom: 4,
+        position: 'relative',
+    },
+    glassInputLabel: {
+        position: 'absolute',
+        left: 16,
+        fontWeight: '500',
+        zIndex: 1,
+    },
+    glassInput: {
+        position: 'absolute',
+        bottom: 8,
+        left: 16,
+        right: 16,
+        fontSize: 16,
+        height: 32,
+    },
+    glassButton: {
+        flexDirection: 'row',
+        width: '100%',
+        paddingVertical: 16,
+        paddingHorizontal: 24,
+        borderRadius: 30,
+        justifyContent: 'center',
+        alignItems: 'center',
+    },
+    glassButtonLabel: {
+        fontSize: 17,
+        fontWeight: '700',
+        color: '#FFFFFF',
+        letterSpacing: 0.3,
+    },
+});
+
+const bigStyles = StyleSheet.create({
+    wrapper: { marginHorizontal: 16, marginBottom: 14 },
+    card: { borderRadius: 24, borderWidth: 1, overflow: 'hidden' },
+    imageWrap: { position: 'relative' },
+    image: { width: '100%', height: 190 },
+    imageOverlay: { position: 'absolute', bottom: 0, left: 0, right: 0, height: 80 },
+    favBtn: { position: 'absolute', top: 12, right: 12 },
+    favBlur: { width: 36, height: 36, borderRadius: 18, overflow: 'hidden', justifyContent: 'center', alignItems: 'center', borderWidth: 1, borderColor: 'rgba(255,255,255,0.2)' },
+    offerPill: { position: 'absolute', bottom: 12, right: 12, flexDirection: 'row', alignItems: 'center', backgroundColor: 'rgba(108,59,245,0.9)', paddingHorizontal: 10, paddingVertical: 5, borderRadius: 20 },
+    offerText: { color: '#FFF', fontSize: 11, fontWeight: '700' },
+    ratingPill: { position: 'absolute', bottom: 12, left: 12, flexDirection: 'row', alignItems: 'center', paddingHorizontal: 9, paddingVertical: 4, borderRadius: 20 },
+    ratingText: { color: '#FFF', fontSize: 12, fontWeight: '700' },
+    info: { paddingHorizontal: 16, paddingVertical: 14 },
+    name: { fontSize: 17, fontWeight: '700', marginBottom: 6 },
+    metaRow: { flexDirection: 'row', alignItems: 'center', marginBottom: 5 },
+    metaItem: { flexDirection: 'row', alignItems: 'center', gap: 4 },
+    metaDot: { width: 3, height: 3, borderRadius: 1.5, backgroundColor: '#999', marginHorizontal: 8 },
+    metaText: { fontSize: 13 },
+    tags: { fontSize: 12, opacity: 0.7 },
+});
+
+const recStyles = StyleSheet.create({
+    card: { borderRadius: 20, borderWidth: 1, overflow: 'hidden' },
+    imageWrap: { position: 'relative' },
+    image: { width: '100%', height: 110 },
+    ratingPill: { position: 'absolute', top: 8, right: 8, flexDirection: 'row', alignItems: 'center', paddingHorizontal: 7, paddingVertical: 3, borderRadius: 12 },
+    ratingText: { color: '#FFF', fontSize: 10, fontWeight: '700' },
+    info: { paddingHorizontal: 10, paddingVertical: 10 },
+    name: { fontSize: 13, fontWeight: '700', marginBottom: 2 },
+    time: { fontSize: 11 },
+});
+
+const fabStyles = StyleSheet.create({
+    wrapper: { position: 'absolute', bottom: 100, left: 20, right: 20 },
+    blurPill: { borderRadius: 30, overflow: 'hidden', borderWidth: 1, borderColor: 'rgba(255,255,255,0.2)' },
+    gradient: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: 20, paddingVertical: 14 },
+    leftSection: { flexDirection: 'row', alignItems: 'center', gap: 12 },
+    countBadge: { backgroundColor: 'rgba(255,255,255,0.25)', width: 28, height: 28, borderRadius: 14, justifyContent: 'center', alignItems: 'center' },
+    countText: { color: '#FFF', fontSize: 13, fontWeight: '800' },
+    label: { color: '#FFF', fontSize: 15, fontWeight: '700' },
+    rightSection: { flexDirection: 'row', alignItems: 'center', gap: 2 },
+    price: { color: '#FFF', fontSize: 15, fontWeight: '800' },
 });

@@ -134,24 +134,28 @@ export const UserProvider = ({ children }) => {
             let currentLocation = FALLBACK_LOCATION;
             let { status } = await Location.requestForegroundPermissionsAsync();
             if (status === 'granted') {
-                let location = await Location.getCurrentPositionAsync({});
-                let geocode = await Location.reverseGeocodeAsync(location.coords);
-                if (geocode && geocode[0]) {
-                    const { street, district, city, postalCode } = geocode[0];
-                    const parts1 = [];
-                    if (street && street.trim()) parts1.push(street.trim());
-                    if (district && district.trim()) parts1.push(district.trim());
+                try {
+                    let location = await Location.getCurrentPositionAsync({});
+                    let geocode = await Location.reverseGeocodeAsync(location.coords);
+                    if (geocode && geocode[0]) {
+                        const { street, district, city, postalCode } = geocode[0];
+                        const parts1 = [];
+                        if (street && street.trim()) parts1.push(street.trim());
+                        if (district && district.trim()) parts1.push(district.trim());
 
-                    const parts2 = [];
-                    if (city && city.trim()) parts2.push(city.trim());
-                    if (postalCode && postalCode.trim()) parts2.push(postalCode.trim());
+                        const parts2 = [];
+                        if (city && city.trim()) parts2.push(city.trim());
+                        if (postalCode && postalCode.trim()) parts2.push(postalCode.trim());
 
-                    currentLocation = {
-                        id: 'current_location',
-                        type: 'Current Location',
-                        line1: parts1.join(', ') || 'Current Location',
-                        line2: parts2.join(', ') || 'Mumbai, Maharashtra'
-                    };
+                        currentLocation = {
+                            id: 'current_location',
+                            type: 'Current Location',
+                            line1: parts1.join(', ') || 'Current Location',
+                            line2: parts2.join(', ') || 'Mumbai, Maharashtra'
+                        };
+                    }
+                } catch (locErr) {
+                    console.warn('Geocoding service unavailable, using fallback location:', locErr.message);
                 }
             }
 

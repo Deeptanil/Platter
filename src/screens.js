@@ -380,15 +380,10 @@ const HomeScreenHeader = ({ navigation, theme, isVegOnly, setIsVegOnly, selected
                             activeOpacity={0.8}
                         >
                             {isActive ? (
-                                <LinearGradient
-                                    colors={['#8B5CF6', '#6C3BF5']}
-                                    start={{ x: 0, y: 0 }}
-                                    end={{ x: 1, y: 0 }}
-                                    style={homeStyles.filterChip}
-                                >
+                                <View style={[homeStyles.filterChip, { backgroundColor: '#6C3BF5' }]}>
                                     <MaterialCommunityIcons name={item.icon} size={13} color="#FFF" style={{ marginRight: 4 }} />
                                     <RNText style={[homeStyles.chipLabel, { color: '#FFF' }]}>{item.label}</RNText>
-                                </LinearGradient>
+                                </View>
                             ) : (
                                 <BlurView intensity={theme.dark ? 25 : 40} tint={theme.dark ? 'dark' : 'light'}
                                     style={[homeStyles.filterChip, { borderColor: theme.dark ? 'rgba(255,255,255,0.1)' : 'rgba(108,59,245,0.15)', backgroundColor: theme.dark ? 'rgba(255,255,255,0.05)' : 'rgba(108,59,245,0.06)' }]}>
@@ -597,7 +592,7 @@ const MenuItemCard = ({ item, restaurant, onPressImage }) => {
                 </TouchableOpacity>
                 <View style={rdStyles.menuItemAction}>
                     {quantity > 0 ? (
-                        <LinearGradient colors={['#8B5CF6', '#6C3BF5']} start={{ x: 0, y: 0 }} end={{ x: 1, y: 0 }} style={rdStyles.qtyBox}>
+                        <View style={[rdStyles.qtyBox, { backgroundColor: '#6C3BF5' }]}>
                             <TouchableOpacity onPress={() => { triggerHaptic(); removeFromCart(item); }} style={rdStyles.qtyBtn}>
                                 <MaterialCommunityIcons name="minus" size={14} color="#FFF" />
                             </TouchableOpacity>
@@ -605,13 +600,13 @@ const MenuItemCard = ({ item, restaurant, onPressImage }) => {
                             <TouchableOpacity onPress={() => { triggerHaptic(); addToCart({ ...item, restaurantName: restaurant.name }); }} style={rdStyles.qtyBtn}>
                                 <MaterialCommunityIcons name="plus" size={14} color="#FFF" />
                             </TouchableOpacity>
-                        </LinearGradient>
+                        </View>
                     ) : (
                         <TouchableOpacity onPress={() => { triggerHaptic(); addToCart({ ...item, restaurantName: restaurant.name }); }} activeOpacity={0.85}>
-                            <LinearGradient colors={['#8B5CF6', '#6C3BF5']} start={{ x: 0, y: 0 }} end={{ x: 1, y: 0 }} style={rdStyles.addBtn}>
+                            <View style={[rdStyles.addBtn, { backgroundColor: '#6C3BF5' }]}>
                                 <MaterialCommunityIcons name="plus" size={14} color="#FFF" />
                                 <RNText style={rdStyles.addBtnText}>ADD</RNText>
-                            </LinearGradient>
+                            </View>
                         </TouchableOpacity>
                     )}
                 </View>
@@ -732,7 +727,7 @@ const FoodDetailsPopup = ({ item, restaurant, onClose, theme }) => {
             <BlurView intensity={theme.dark ? 40 : 60} tint={theme.dark ? 'dark' : 'light'} style={[rdStyles.popupFooter, { borderTopColor: theme.dark ? 'rgba(255,255,255,0.08)' : 'rgba(108,59,245,0.1)' }]}>
                 <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', width: '100%' }}>
                     {/* Qty Selector */}
-                    <LinearGradient colors={['#8B5CF6', '#6C3BF5']} start={{ x: 0, y: 0 }} end={{ x: 1, y: 0 }} style={rdStyles.popupQtyBox}>
+                    <View style={[rdStyles.popupQtyBox, { backgroundColor: '#6C3BF5' }]}>
                         <TouchableOpacity onPress={() => setQty(q => Math.max(1, q - 1))} style={rdStyles.popupQtyBtn}>
                             <MaterialCommunityIcons name="minus" size={16} color="#FFF" />
                         </TouchableOpacity>
@@ -740,7 +735,7 @@ const FoodDetailsPopup = ({ item, restaurant, onClose, theme }) => {
                         <TouchableOpacity onPress={() => setQty(q => q + 1)} style={rdStyles.popupQtyBtn}>
                             <MaterialCommunityIcons name="plus" size={16} color="#FFF" />
                         </TouchableOpacity>
-                    </LinearGradient>
+                    </View>
 
                     {/* Add button */}
                     <TouchableOpacity onPress={handleAdd} activeOpacity={0.85} style={{ flex: 1, marginLeft: 16 }}>
@@ -936,12 +931,12 @@ export const RestaurantDetailsScreen = ({ navigation, route }) => {
                                 {menuFilters.map(f => (
                                     <TouchableOpacity key={f} onPress={() => { triggerHaptic(); setActiveFilter(f); }} activeOpacity={0.8}>
                                         {activeFilter === f ? (
-                                            <LinearGradient colors={['#8B5CF6', '#6C3BF5']} start={{ x: 0, y: 0 }} end={{ x: 1, y: 0 }} style={rdStyles.filterPill}>
+                                            <View style={[rdStyles.filterPill, { backgroundColor: '#6C3BF5' }]}>
                                                 {f === 'veg' && <MaterialCommunityIcons name="leaf" size={12} color="#FFF" style={{ marginRight: 4 }} />}
                                                 {f === 'non-veg' && <MaterialCommunityIcons name="food-drumstick" size={12} color="#FFF" style={{ marginRight: 4 }} />}
                                                 {f === 'highly ordered' && <MaterialCommunityIcons name="trending-up" size={12} color="#FFF" style={{ marginRight: 4 }} />}
                                                 <RNText style={[rdStyles.filterPillText, { color: '#FFF' }]}>{f.charAt(0).toUpperCase() + f.slice(1)}</RNText>
-                                            </LinearGradient>
+                                            </View>
                                         ) : (
                                             <BlurView intensity={20} tint={theme.dark ? 'dark' : 'light'}
                                                 style={[rdStyles.filterPill, { borderColor: theme.dark ? 'rgba(255,255,255,0.12)' : 'rgba(108,59,245,0.18)', backgroundColor: theme.dark ? 'rgba(255,255,255,0.06)' : 'rgba(255,255,255,0.6)' }]}>
@@ -1035,8 +1030,7 @@ const CartItemCard = ({ item }) => {
                 <RNText style={{ color: theme.colors.primary, fontWeight: '700', marginTop: 4, fontSize: 14 }}>₹{item.price * item.quantity}</RNText>
             </View>
             <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4 }}>
-                <LinearGradient colors={['#8B5CF6', '#6C3BF5']} start={{ x: 0, y: 0 }} end={{ x: 1, y: 0 }}
-                    style={{ flexDirection: 'row', alignItems: 'center', borderRadius: 20, height: 36, paddingHorizontal: 4 }}>
+                <View style={{ flexDirection: 'row', alignItems: 'center', borderRadius: 20, height: 36, paddingHorizontal: 4, backgroundColor: '#6C3BF5' }}>
                     <TouchableOpacity onPress={() => removeFromCart(item)} style={{ width: 32, height: 32, justifyContent: 'center', alignItems: 'center' }}>
                         <MaterialCommunityIcons name="minus" size={16} color="#FFF" />
                     </TouchableOpacity>
@@ -1044,7 +1038,7 @@ const CartItemCard = ({ item }) => {
                     <TouchableOpacity onPress={() => addToCart(item)} style={{ width: 32, height: 32, justifyContent: 'center', alignItems: 'center' }}>
                         <MaterialCommunityIcons name="plus" size={16} color="#FFF" />
                     </TouchableOpacity>
-                </LinearGradient>
+                </View>
                 <TouchableOpacity onPress={() => removeItemFromCart(item.id)} style={{ width: 32, height: 32, justifyContent: 'center', alignItems: 'center' }}>
                     <MaterialCommunityIcons name="close-circle" size={22} color={theme.dark ? 'rgba(255,255,255,0.35)' : 'rgba(0,0,0,0.3)'} />
                 </TouchableOpacity>

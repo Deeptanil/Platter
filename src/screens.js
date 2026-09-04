@@ -111,8 +111,8 @@ export const AuthScreen = ({ navigation }) => {
                                         <Text style={[styles.appNameTitle, { color: theme.colors.primary, letterSpacing: 2 }]}>Platter</Text>
                                     </Animated.View>
                                     <Animated.View style={[{width: '100%'}, animatedCardStyle]}>
-                                        <GlassCard>
-                                            <Text variant="headlineLarge" style={[styles.authTitle, { color: theme.dark ? '#FFFFFF' : theme.colors.onSurface }]}>Welcome to Platter</Text>
+                                        <GlassCard style={{ marginBottom: 16 }}>
+                                            <Text variant="headlineMedium" style={[styles.authTitle, { color: theme.dark ? '#FFFFFF' : theme.colors.onSurface }]}>Welcome to Platter</Text>
                                             <Text variant="bodyLarge" style={[styles.authSubtitle, { color: theme.dark ? '#E0E0E0' : theme.colors.onSurfaceVariant }]}>Mumbai's hunger, delivered.</Text>
                                         </GlassCard>
                                         <GlassButton title="Next" icon="arrow-right" onPress={handlePrimaryAction}/>
@@ -1191,6 +1191,7 @@ export const CartScreen = ({ navigation }) => {
         <AppBackground>
             <ScrollView contentContainerStyle={{ paddingBottom: 130 }} showsVerticalScrollIndicator={false}>
                 {/* 1. Restaurant Header & Cart Items List */}
+                <RNText style={cartStyles.sectionHeader}>ITEMS ORDERED</RNText>
                 <View style={[cartStyles.card, { backgroundColor: isDark ? '#1C1A30' : '#FFFFFF', borderColor: isDark ? '#2D2A4A' : '#EBE6FF' }]}>
                     <View style={cartStyles.restaurantHeader}>
                         {restaurantData?.image && (
@@ -1265,6 +1266,7 @@ export const CartScreen = ({ navigation }) => {
                 </View>
 
                 {/* 2. Special Prices Unlocked Carousel */}
+                <RNText style={cartStyles.sectionHeader}>SPECIAL ADD-ONS</RNText>
                 <View style={[cartStyles.card, { backgroundColor: isDark ? '#1C1A30' : '#FFFFFF', borderColor: isDark ? '#2D2A4A' : '#EBE6FF' }]}>
                     <View style={cartStyles.specialHeader}>
                         <MaterialCommunityIcons name="rhombus-split" size={20} color="#2196F3" />
@@ -1299,6 +1301,7 @@ export const CartScreen = ({ navigation }) => {
                 </View>
 
                 {/* 3. Gold & Coupon Offers */}
+                <RNText style={cartStyles.sectionHeader}>OFFERS & SAVINGS</RNText>
                 <View style={[cartStyles.card, { backgroundColor: isDark ? '#1C1A30' : '#FFFFFF', borderColor: isDark ? '#2D2A4A' : '#EBE6FF' }]}>
                     {/* Gold Membership Offer */}
                     <View style={cartStyles.offerRow}>
@@ -1365,6 +1368,7 @@ export const CartScreen = ({ navigation }) => {
                 </View>
 
                 {/* 5. Delivery Details Metadata */}
+                <RNText style={cartStyles.sectionHeader}>DELIVERY DETAILS</RNText>
                 <View style={[cartStyles.card, { backgroundColor: isDark ? '#1C1A30' : '#FFFFFF', borderColor: isDark ? '#2D2A4A' : '#EBE6FF' }]}>
                     {/* Time */}
                     <TouchableOpacity onPress={() => { triggerHaptic(); setScheduleVisible(true); }} style={cartStyles.metaRow}>
@@ -1396,19 +1400,6 @@ export const CartScreen = ({ navigation }) => {
 
                     <View style={[cartStyles.metaDivider, { backgroundColor: isDark ? '#2D2A4A' : '#EBE6FF' }]} />
 
-                    {/* Contact Person */}
-                    <TouchableOpacity onPress={() => { triggerHaptic(); setAddressVisible(true); }} style={cartStyles.metaRow}>
-                        <MaterialCommunityIcons name="phone-outline" size={20} color={theme.colors.onSurfaceVariant} />
-                        <View style={{ flex: 1, marginLeft: 12 }}>
-                            <RNText style={[cartStyles.metaTitle, { color: theme.colors.onSurface }]}>
-                                Deeptanil Sinha, {activeAddressObj ? activeAddressObj.phone : '+91-7760343724'}
-                            </RNText>
-                        </View>
-                        <MaterialCommunityIcons name="chevron-right" size={20} color={theme.colors.onSurfaceVariant} />
-                    </TouchableOpacity>
-
-                    <View style={[cartStyles.metaDivider, { backgroundColor: isDark ? '#2D2A4A' : '#EBE6FF' }]} />
-
                     {/* Total Bill breakdown link */}
                     <TouchableOpacity onPress={() => { triggerHaptic(); setBillSummaryVisible(true); }} style={cartStyles.metaRow}>
                         <MaterialCommunityIcons name="file-document-outline" size={20} color={theme.colors.onSurfaceVariant} />
@@ -1421,6 +1412,7 @@ export const CartScreen = ({ navigation }) => {
                 </View>
 
                 {/* 6. Join us at Feeding India */}
+                <RNText style={cartStyles.sectionHeader}>SUPPORT A CAUSE</RNText>
                 <View style={[cartStyles.card, { backgroundColor: isDark ? '#1C1A30' : '#FFFFFF', borderColor: isDark ? '#2D2A4A' : '#EBE6FF', padding: 0, overflow: 'hidden' }]}>
                     {/* Feeding India Top Banner illustration */}
                     <LinearGradient colors={['#1D4ED8', '#2563EB']} style={{ padding: 16 }}>
@@ -2532,11 +2524,11 @@ const styles = StyleSheet.create({
     moodItem: { width: 100, height: 100, justifyContent: 'center', alignItems: 'center', borderRadius: 20, marginRight: 12 },
     sortChip: { flexDirection: 'row', alignItems: 'center', paddingVertical: 6, paddingHorizontal: 12, borderRadius: 20 },
     authContainer: { flex: 1 },
-    authContent: { flex: 1, alignItems: 'center', padding: 20 },
-    stageContainer: { flex: 1, width: '100%', justifyContent: 'space-around', alignItems: 'center', paddingBottom: 30},
-    appNameTitle: { fontSize: 80, fontWeight: '900', textAlign: 'center', letterSpacing: 2 },
-    stageTitle: { fontSize: 32, fontWeight: '600', textAlign: 'center', textShadowColor: 'rgba(0, 0, 0, 0.2)', textShadowOffset: {width: 1, height: 1}, textShadowRadius: 3 },
-    authTitle: { fontWeight: 'bold', marginBottom: 4, textAlign: 'center' },
+    authContent: { flex: 1, alignItems: 'center', justifyContent: 'center', padding: 20 },
+    stageContainer: { flex: 1, width: '100%', justifyContent: 'center', alignItems: 'center', paddingBottom: 20 },
+    appNameTitle: { fontSize: 44, fontWeight: '900', textAlign: 'center', letterSpacing: 2, marginBottom: 20 },
+    stageTitle: { fontSize: 26, fontWeight: '700', textAlign: 'center', textShadowColor: 'rgba(0, 0, 0, 0.15)', textShadowOffset: {width: 1, height: 1}, textShadowRadius: 3, marginBottom: 16 },
+    authTitle: { fontWeight: '800', marginBottom: 6, textAlign: 'center' },
     authSubtitle: { textAlign: 'center', opacity: 0.9, fontSize: 16 },
     countryCodeButton: { height: 56, width: 60, borderRadius: 12, borderWidth: 1, justifyContent: 'center', alignItems: 'center', marginRight: 8},
     modalOverlay: { flex: 1, justifyContent: 'center', alignItems: 'center', padding: 20},
@@ -2749,6 +2741,15 @@ const rdStyles = StyleSheet.create({
 });
 
 const cartStyles = StyleSheet.create({
+    sectionHeader: {
+        fontSize: 11,
+        fontWeight: '800',
+        letterSpacing: 0.8,
+        color: '#8B5CF6',
+        marginTop: 16,
+        marginBottom: 6,
+        marginHorizontal: 18,
+    },
     card: {
         marginHorizontal: 16,
         marginTop: 12,

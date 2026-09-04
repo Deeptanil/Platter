@@ -6,6 +6,7 @@ import {
     Animated,
     Dimensions,
     StatusBar,
+    Platform,
 } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useAppTheme } from './context';
@@ -114,21 +115,21 @@ export default function SplashScreen({ onFinish }) {
                 style={StyleSheet.absoluteFill}
             />
 
-            {/* Radial glow blob behind logo */}
-            <Animated.View
-                style={[
-                    styles.glow,
-                    {
-                        backgroundColor: isDark ? '#7C3AED' : '#C9B8FF',
-                        shadowColor: isDark ? '#8B5CF6' : '#9D7BFF',
-                        opacity: glowOpacity,
-                        transform: [{ scale: glowScale }],
-                    },
-                ]}
-            />
-
             {/* Centre content */}
             <View style={styles.centre}>
+                {/* Radial glow blob behind logo */}
+                <Animated.View
+                    style={[
+                        styles.glow,
+                        {
+                            backgroundColor: isDark ? '#7C3AED' : '#C9B8FF',
+                            shadowColor: isDark ? '#8B5CF6' : '#9D7BFF',
+                            opacity: glowOpacity,
+                            transform: [{ scale: glowScale }],
+                        },
+                    ]}
+                />
+
                 {/* Wordmark */}
                 <Animated.Text
                     style={[
@@ -149,7 +150,7 @@ export default function SplashScreen({ onFinish }) {
                     style={{
                         opacity: taglineOpacity,
                         transform: [{ translateY: taglineY }],
-                        marginTop: 14,
+                        marginTop: 16,
                         alignItems: 'center',
                     }}
                 >
@@ -202,29 +203,39 @@ function PulsingDot({ delay, isDark }) {
 
 const styles = StyleSheet.create({
     root: {
-        ...StyleSheet.absoluteFillObject,
+        position: 'absolute',
+        top: 0,
+        left: 0,
+        right: 0,
+        bottom: 0,
         alignItems: 'center',
         justifyContent: 'center',
-        zIndex: 999,
+        zIndex: 9999,
+        elevation: 9999,
     },
     glow: {
         position: 'absolute',
-        width: Math.min(SW * 0.8, 300),
-        height: Math.min(SW * 0.8, 300),
-        borderRadius: 150,
+        width: 220,
+        height: 220,
+        borderRadius: 110,
         shadowOpacity: 0.8,
-        shadowRadius: 80,
-        elevation: 15,
+        shadowRadius: 60,
+        elevation: 10,
     },
     centre: {
+        flex: 1,
         alignItems: 'center',
         justifyContent: 'center',
-        paddingHorizontal: 20,
+        width: '100%',
     },
     wordmark: {
-        fontFamily: 'Casko',
-        fontSize: 52,
+        fontSize: 48,
+        fontWeight: '900',
         letterSpacing: 4,
+        textTransform: 'lowercase',
+        textAlign: 'center',
+        lineHeight: 56,
+        includeFontPadding: false,
         textShadowOffset: { width: 0, height: 0 },
         textShadowRadius: 20,
     },
@@ -240,12 +251,12 @@ const styles = StyleSheet.create({
     taglineText: {
         fontSize: 11,
         letterSpacing: 2.5,
-        fontWeight: '500',
+        fontWeight: '600',
         textTransform: 'lowercase',
     },
     dotsRow: {
         position: 'absolute',
-        bottom: 50,
+        bottom: 48,
         flexDirection: 'row',
         gap: 8,
         alignItems: 'center',

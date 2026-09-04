@@ -209,24 +209,24 @@ const styles = StyleSheet.create({
     },
     glow: {
         position: 'absolute',
-        width: SW * 0.85,
-        height: SW * 0.85,
-        borderRadius: SW * 0.425,
-        // soft radial effect via shadow
-        shadowOpacity: 1,
-        shadowRadius: 120,
-        elevation: 20,
+        width: Math.min(SW * 0.8, 300),
+        height: Math.min(SW * 0.8, 300),
+        borderRadius: 150,
+        shadowOpacity: 0.8,
+        shadowRadius: 80,
+        elevation: 15,
     },
     centre: {
         alignItems: 'center',
         justifyContent: 'center',
+        paddingHorizontal: 20,
     },
     wordmark: {
         fontFamily: 'Casko',
-        fontSize: 68,
-        letterSpacing: 6,
+        fontSize: 52,
+        letterSpacing: 4,
         textShadowOffset: { width: 0, height: 0 },
-        textShadowRadius: 30,
+        textShadowRadius: 20,
     },
     taglineDividerWrap: {
         flexDirection: 'row',
@@ -245,7 +245,7 @@ const styles = StyleSheet.create({
     },
     dotsRow: {
         position: 'absolute',
-        bottom: SH * 0.1,
+        bottom: 50,
         flexDirection: 'row',
         gap: 8,
         alignItems: 'center',

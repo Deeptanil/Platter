@@ -1057,22 +1057,20 @@ export const CartScreen = ({ navigation }) => {
     const { theme } = useAppTheme();
     const isDark = theme.dark;
     const { cart, cartTotal, addToCart, removeFromCart, clearCart } = useCart();
-    const { selectedAddress, addresses, user } = useUser();
+    const { selectedAddress, addresses, user, selectAddress, deleteAddress } = useUser();
 
     // Helper functions for actual address evaluation
     const getAddressDeliveryStatus = (addr) => {
-        if (!addr) return false;
-        const desc = `${addr.line1} ${addr.line2}`.toLowerCase();
-        return desc.includes('mumbai') || desc.includes('bkc') || addr.type === 'Office';
+        return true;
     };
 
     const getAddressDistanceStr = (addr) => {
-        if (!addr) return '16.5 km';
+        if (!addr) return '1.5 km';
         const desc = `${addr.line1} ${addr.line2}`.toLowerCase();
-        if (desc.includes('mumbai') || desc.includes('bkc') || addr.type === 'Office') {
-            return '1.3 km';
+        if (desc.includes('kaikondrahalli') || desc.includes('bengaluru')) {
+            return '2.1 km';
         }
-        return '16.5 km';
+        return '1.3 km';
     };
 
     // ── Address Options & Lists ──────────────────────────────────────────────
@@ -1081,9 +1079,6 @@ export const CartScreen = ({ navigation }) => {
         // Ensure default location and Kaikondrahalli Bangalore location is mapped
         if (list.length === 0) {
             list.push({ id: 'addr_1', type: 'Home', line1: 'C2-306, Kaikondrahalli, Bengaluru', line2: 'Bengaluru, Karnataka', phone: user?.phone || '+91-7760343724' });
-        }
-        // Ensure we have at least one Mumbai BKC address to satisfy delivery rules
-        if (!list.some(a => a.type === 'Office' || a.line2?.includes('Mumbai') || a.line1?.includes('BKC'))) {
             list.push({ id: 'addr_2', type: 'Office', line1: 'B-402, Signature Towers, BKC', line2: 'Mumbai, Maharashtra', phone: user?.phone || '+91-7760343724' });
         }
         return list;
@@ -1092,11 +1087,12 @@ export const CartScreen = ({ navigation }) => {
     const [activeAddressObj, setActiveAddressObj] = React.useState(null);
 
     React.useEffect(() => {
-        if (!activeAddressObj && savedAddresses.length > 0) {
-            const delivering = savedAddresses.find(a => getAddressDeliveryStatus(a)) || savedAddresses[0];
-            setActiveAddressObj(delivering);
+        if (selectedAddress) {
+            setActiveAddressObj(selectedAddress);
+        } else if (savedAddresses.length > 0 && !activeAddressObj) {
+            setActiveAddressObj(savedAddresses[0]);
         }
-    }, [savedAddresses]);
+    }, [selectedAddress, savedAddresses]);
 
     // ── Interaction States ───────────────────────────────────────────────────
     const [note, setNote] = React.useState('');
@@ -1489,14 +1485,14 @@ export const CartScreen = ({ navigation }) => {
                     <RNText style={[cartStyles.paymentMethodText, { color: theme.colors.onSurface }]} numberOfLines={1}>Navi UPI</RNText>
                 </View>
 
-                <TouchableOpacity onPress={handlePlaceOrder} style={cartStyles.placeOrderBtn}>
+                <TouchableOpacity onPress={handlePlaceOrder} style={cartStyles.placeOrderBtn} activeOpacity={0.85}>
                     <View style={cartStyles.placeOrderLeft}>
                         <RNText style={cartStyles.placeOrderTotal}>₹{grandTotal.toFixed(2)}</RNText>
                         <RNText style={cartStyles.placeOrderTotalLabel}>TOTAL</RNText>
                     </View>
                     <View style={cartStyles.placeOrderRight}>
                         <RNText style={cartStyles.placeOrderText}>Place Order</RNText>
-                        <MaterialCommunityIcons name="play" size={14} color="#FFF" style={{ marginLeft: 2 }} />
+                        <MaterialCommunityIcons name="chevron-right" size={18} color="#FFF" style={{ marginLeft: 2 }} />
                     </View>
                 </TouchableOpacity>
             </View>
@@ -1576,82 +1572,85 @@ export const CartScreen = ({ navigation }) => {
                         <TouchableOpacity 
                             onPress={() => {
                                 triggerHaptic();
-                                // Quick add address mock
-                                const newAddr = {
-                                    id: `addr_${Date.now()}`,
-                                    type: 'Office',
-                                    line1: 'B-402, Signature Towers, BKC',
-                                    line2: 'Mumbai, Maharashtra',
-                                    phone: '+91-7760343724'
-                                };
-                                addAddress(newAddr);
+                                setAddressVisible(false);
+                                navigation.navigate('MyAddresses');
                             }}
                             style={cartStyles.sheetActionRow}
                         >
                             <MaterialCommunityIcons name="plus" size={20} color="#6C3BF5" />
-                            <RNText style={cartStyles.sheetActionText}>Add Address</RNText>
+                            <RNText style={cartStyles.sheetActionText}>Add New Address</RNText>
                         </TouchableOpacity>
 
                         <RNText style={cartStyles.savedAddressesHeader}>SAVED ADDRESSES</RNText>
 
                         {/* Addresses list */}
-                        <View style={{ height: 260 }}>
-                            <ScrollView showsVerticalScrollIndicator={false}>
-                                {/* DELIVERS TO SECTION */}
-                                <RNText style={cartStyles.addressSectionTitle}>DELIVERS TO</RNText>
-                                {savedAddresses.filter(a => getAddressDeliveryStatus(a)).map(addr => (
+                        <ScrollView style={{ maxHeight: 360 }} showsVerticalScrollIndicator={false}>
+                            {savedAddresses.map((addr) => {
+                                const isSelected = (activeAddressObj?.id === addr.id) || (selectedAddress?.id === addr.id);
+                                const getIconName = (type) => {
+                                    if (type === 'Office') return 'briefcase-outline';
+                                    if (type === 'Home') return 'home-outline';
+                                    if (type === 'Current Location') return 'crosshairs-gps';
+                                    return 'map-marker-outline';
+                                };
+
+                                return (
                                     <TouchableOpacity 
                                         key={addr.id} 
                                         onPress={() => {
+                                            triggerHaptic();
                                             setActiveAddressObj(addr);
+                                            selectAddress && selectAddress(addr.id);
                                             setAddressVisible(false);
                                         }}
-                                        style={[cartStyles.addressItemCard, { backgroundColor: isDark ? '#24223A' : '#F9F8FF' }]}
+                                        style={[
+                                            cartStyles.addressItemCard, 
+                                            { 
+                                                backgroundColor: isDark ? '#24223A' : '#F9F8FF',
+                                                borderColor: isSelected ? '#6C3BF5' : (isDark ? '#2E2B46' : '#ECE8FF'),
+                                                borderWidth: isSelected ? 1.5 : 1,
+                                            }
+                                        ]}
                                     >
-                                        <MaterialCommunityIcons name="home-outline" size={22} color="#6C3BF5" />
+                                        <MaterialCommunityIcons name={getIconName(addr.type)} size={22} color={isSelected ? '#6C3BF5' : (isDark ? '#AAA' : '#666')} />
                                         <View style={{ flex: 1, marginLeft: 12, marginRight: 8 }}>
-                                            <RNText style={[cartStyles.addressItemType, { color: theme.colors.onSurface }]}>{addr.type}</RNText>
-                                            <RNText style={[cartStyles.addressItemDesc, { color: theme.colors.onSurfaceVariant }]}>{addr.line1}</RNText>
-                                            <RNText style={[cartStyles.addressItemPhone, { color: theme.colors.onSurfaceVariant }]}>Phone number: {addr.phone}</RNText>
+                                            <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+                                                <RNText style={[cartStyles.addressItemType, { color: theme.colors.onSurface, fontWeight: isSelected ? '800' : '700' }]}>
+                                                    {addr.type || 'Address'}
+                                                </RNText>
+                                                {isSelected && (
+                                                    <View style={cartStyles.selectedBadge}>
+                                                        <RNText style={cartStyles.selectedBadgeText}>DELIVERING HERE</RNText>
+                                                    </View>
+                                                )}
+                                            </View>
+                                            <RNText style={[cartStyles.addressItemDesc, { color: theme.colors.onSurfaceVariant }]}>
+                                                {addr.line1}{addr.line2 ? `, ${addr.line2}` : ''}
+                                            </RNText>
+                                            <RNText style={[cartStyles.addressItemPhone, { color: theme.colors.onSurfaceVariant }]}>
+                                                Phone number: {addr.phone || user?.phone || '+91-7760343724'}
+                                            </RNText>
                                         </View>
-                                        <View style={{ alignItems: 'flex-end', justifyContent: 'space-between', height: '100%' }}>
-                                            <RNText style={cartStyles.addressItemDist}>{getAddressDistanceStr(addr)}</RNText>
+                                        <View style={{ alignItems: 'flex-end', justifyContent: 'space-between', alignSelf: 'stretch' }}>
+                                            {isSelected ? (
+                                                <MaterialCommunityIcons name="check-circle" size={22} color="#6C3BF5" />
+                                            ) : (
+                                                <MaterialCommunityIcons name="radiobox-blank" size={22} color={isDark ? '#555' : '#CCC'} />
+                                            )}
                                             <TouchableOpacity 
-                                                onPress={() => { setTargetAddress(addr); setAddressOptionsVisible(true); }}
-                                                style={{ padding: 4 }}
+                                                onPress={(e) => { 
+                                                    setTargetAddress(addr); 
+                                                    setAddressOptionsVisible(true); 
+                                                }}
+                                                style={{ padding: 4, marginTop: 8 }}
                                             >
                                                 <MaterialCommunityIcons name="dots-horizontal" size={20} color={theme.colors.onSurfaceVariant} />
                                             </TouchableOpacity>
                                         </View>
                                     </TouchableOpacity>
-                                ))}
-
-                                {/* DOES NOT DELIVER TO SECTION */}
-                                <RNText style={[cartStyles.addressSectionTitle, { marginTop: 12 }]}>DOES NOT DELIVER TO</RNText>
-                                {savedAddresses.filter(a => !getAddressDeliveryStatus(a)).map(addr => (
-                                    <View 
-                                        key={addr.id} 
-                                        style={[cartStyles.addressItemCard, { backgroundColor: isDark ? '#24223A' : '#F9F8FF', opacity: 0.6 }]}
-                                    >
-                                        <MaterialCommunityIcons name="map-marker-outline" size={22} color="#888" />
-                                        <View style={{ flex: 1, marginLeft: 12, marginRight: 8 }}>
-                                            <RNText style={[cartStyles.addressItemType, { color: theme.colors.onSurface }]}>{addr.type}</RNText>
-                                            <RNText style={[cartStyles.addressItemDesc, { color: theme.colors.onSurfaceVariant }]}>{addr.line1}</RNText>
-                                            <RNText style={[cartStyles.addressItemPhone, { color: theme.colors.onSurfaceVariant }]}>Phone number: {addr.phone || user?.phone || '+91-7760343724'}</RNText>
-                                        </View>
-                                        <View style={{ alignItems: 'flex-end', justifyContent: 'space-between', height: '100%' }}>
-                                            <RNText style={cartStyles.addressItemDist}>{getAddressDistanceStr(addr)}</RNText>
-                                            <TouchableOpacity 
-                                                onPress={() => { setTargetAddress(addr); setAddressOptionsVisible(true); }}
-                                                style={{ padding: 4 }}
-                                            >
-                                                <MaterialCommunityIcons name="dots-horizontal" size={20} color={theme.colors.onSurfaceVariant} />
-                                            </TouchableOpacity>
-                                        </View>
-                                    </View>
-                                ))}
-                            </ScrollView>
-                        </View>
+                                );
+                            })}
+                        </ScrollView>
                     </View>
                 </View>
             </Modal>
@@ -1672,18 +1671,19 @@ export const CartScreen = ({ navigation }) => {
                             onPress={() => {
                                 triggerHaptic();
                                 setAddressOptionsVisible(false);
+                                navigation.navigate('MyAddresses');
                             }}
                             style={cartStyles.optionItemRow}
                         >
                             <MaterialCommunityIcons name="pencil-outline" size={20} color={theme.colors.onSurface} />
-                            <RNText style={[cartStyles.optionItemText, { color: theme.colors.onSurface }]}>Edit Address</RNText>
+                            <RNText style={[cartStyles.optionItemText, { color: theme.colors.onSurface }]}>Manage Addresses</RNText>
                         </TouchableOpacity>
 
                         <TouchableOpacity 
                             onPress={() => {
                                 triggerHaptic();
                                 if (targetAddress) {
-                                    setSavedAddresses(prev => prev.filter(a => a.id !== targetAddress.id));
+                                    deleteAddress && deleteAddress(targetAddress.id);
                                 }
                                 setAddressOptionsVisible(false);
                             }}
@@ -3021,8 +3021,8 @@ const cartStyles = StyleSheet.create({
         zIndex: 10,
     },
     bottomLeft: {
-        flex: 1,
-        marginRight: 16,
+        marginRight: 12,
+        justifyContent: 'center',
     },
     payUsingText: {
         fontSize: 10,
@@ -3031,7 +3031,7 @@ const cartStyles = StyleSheet.create({
         marginLeft: 4,
     },
     paymentMethodText: {
-        fontSize: 14,
+        fontSize: 13,
         fontWeight: '800',
         marginTop: 2,
     },
@@ -3040,10 +3040,12 @@ const cartStyles = StyleSheet.create({
         flexDirection: 'row',
         alignItems: 'center',
         justifyContent: 'space-between',
-        height: 48,
+        height: 50,
         borderRadius: 14,
         paddingHorizontal: 16,
-        width: 170,
+        flex: 1,
+        maxWidth: 240,
+        minWidth: 190,
     },
     placeOrderLeft: {
         alignItems: 'flex-start',
@@ -3062,10 +3064,23 @@ const cartStyles = StyleSheet.create({
     placeOrderRight: {
         flexDirection: 'row',
         alignItems: 'center',
+        marginLeft: 10,
     },
     placeOrderText: {
         color: '#FFF',
-        fontSize: 14,
+        fontSize: 15,
+        fontWeight: '800',
+    },
+    selectedBadge: {
+        backgroundColor: 'rgba(108, 59, 245, 0.12)',
+        paddingHorizontal: 6,
+        paddingVertical: 2,
+        borderRadius: 4,
+        marginLeft: 8,
+    },
+    selectedBadgeText: {
+        color: '#6C3BF5',
+        fontSize: 9,
         fontWeight: '800',
     },
     modalOverlay: {

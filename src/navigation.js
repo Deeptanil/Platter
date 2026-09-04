@@ -58,10 +58,13 @@ const FloatingTabBar = ({ state, navigation, theme }) => {
                             activeOpacity={0.75}
                         >
                             {isFocused ? (
-                                <View style={[dockStyles.activePill, { backgroundColor: '#6C3BF5' }]}>
+                                <LinearGradient
+                                    colors={['#8B5CF6', '#6C3BF5']}
+                                    style={dockStyles.activePill}
+                                >
                                     <MaterialCommunityIcons name={tab.iconActive} size={18} color="#FFF" />
                                     <Text style={dockStyles.activeLabel} numberOfLines={1}>{tab.label}</Text>
-                                </View>
+                                </LinearGradient>
                             ) : (
                                 <View style={dockStyles.inactiveItem}>
                                     <MaterialCommunityIcons

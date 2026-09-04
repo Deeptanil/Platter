@@ -14,13 +14,21 @@ const triggerHaptic = () => Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medi
 const { width: SW } = Dimensions.get('window');
 
 // ─── AppBackground ────────────────────────────────────────────────────────────
-// Solid clean backdrop — the frosted glass layers sit on top of this.
+// Colorful gradient backdrop — the frosted glass layers sit on top of this.
 export const AppBackground = ({ children }) => {
     const { theme } = useAppTheme();
+    const gradientColors = theme.dark
+        ? ['#0D0B1E', '#150F2E', '#1A1040', '#0D0B1E']
+        : ['#F0EBFF', '#E8E0FF', '#F5F3FF', '#EBF0FF'];
+
     return (
-        <View style={{ flex: 1, backgroundColor: theme.dark ? '#0B0914' : '#F7F6FC' }}>
+        <LinearGradient
+            colors={gradientColors}
+            locations={[0, 0.35, 0.7, 1]}
+            style={{ flex: 1 }}
+        >
             {children}
-        </View>
+        </LinearGradient>
     );
 };
 
@@ -107,9 +115,15 @@ export const GlassInput = ({ label, value, onChangeText, keyboardType, maxLength
 };
 
 // ─── GlassButton ─────────────────────────────────────────────────────────────
-// A premium pill-shaped solid action button.
+// A premium pill-shaped gradient button.
 export const GlassButton = ({ onPress, title, icon, style, disabled }) => {
     const { theme } = useAppTheme();
+
+    const gradientColors = disabled
+        ? [theme.colors.surfaceDisabled, theme.colors.surfaceDisabled]
+        : theme.dark
+            ? ['#9D7BFF', '#6C3BF5']
+            : ['#8B5CF6', '#6C3BF5'];
 
     const handlePress = () => {
         if (!disabled) {
@@ -119,18 +133,16 @@ export const GlassButton = ({ onPress, title, icon, style, disabled }) => {
     };
 
     return (
-        <TouchableOpacity 
-            onPress={handlePress} 
-            disabled={disabled} 
-            activeOpacity={0.82} 
-            style={[
-                cStyles.glassButton, 
-                { backgroundColor: disabled ? theme.colors.surfaceDisabled : '#6C3BF5' }, 
-                style
-            ]}
-        >
-            {icon && <MaterialCommunityIcons name={icon} color="#FFFFFF" size={20} style={{ marginRight: 8 }} />}
-            <RNText style={cStyles.glassButtonLabel}>{title}</RNText>
+        <TouchableOpacity onPress={handlePress} disabled={disabled} activeOpacity={0.82} style={style}>
+            <LinearGradient
+                colors={gradientColors}
+                start={{ x: 0, y: 0 }}
+                end={{ x: 1, y: 0 }}
+                style={cStyles.glassButton}
+            >
+                {icon && <MaterialCommunityIcons name={icon} color="#FFFFFF" size={20} style={{ marginRight: 8 }} />}
+                <RNText style={cStyles.glassButtonLabel}>{title}</RNText>
+            </LinearGradient>
         </TouchableOpacity>
     );
 };
@@ -262,8 +274,13 @@ export const CartFAB = ({ navigation, bottomOffset }) => {
             activeOpacity={0.9}
             style={[fabStyles.wrapper, { bottom: resolvedBottom }]}
         >
-            <View style={[fabStyles.blurPill, { backgroundColor: '#6C3BF5' }]}>
-                <View style={fabStyles.solidBar}>
+            <BlurView intensity={80} tint="dark" style={fabStyles.blurPill}>
+                <LinearGradient
+                    colors={['rgba(108,59,245,0.95)', 'rgba(157,123,255,0.95)']}
+                    start={{ x: 0, y: 0 }}
+                    end={{ x: 1, y: 0 }}
+                    style={fabStyles.gradient}
+                >
                     <View style={fabStyles.leftSection}>
                         <View style={fabStyles.countBadge}>
                             <RNText style={fabStyles.countText}>{cartItemCount}</RNText>
@@ -274,8 +291,8 @@ export const CartFAB = ({ navigation, bottomOffset }) => {
                         <RNText style={fabStyles.price}>₹{cartTotal}</RNText>
                         <MaterialCommunityIcons name="chevron-right" size={20} color="#FFF" />
                     </View>
-                </View>
-            </View>
+                </LinearGradient>
+            </BlurView>
         </TouchableOpacity>
     );
 };
@@ -366,7 +383,7 @@ const recStyles = StyleSheet.create({
 const fabStyles = StyleSheet.create({
     wrapper: { position: 'absolute', bottom: 100, left: 20, right: 20 },
     blurPill: { borderRadius: 30, overflow: 'hidden', borderWidth: 1, borderColor: 'rgba(255,255,255,0.2)' },
-    solidBar: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: 20, paddingVertical: 14 },
+    gradient: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: 20, paddingVertical: 14 },
     leftSection: { flexDirection: 'row', alignItems: 'center', gap: 12 },
     countBadge: { backgroundColor: 'rgba(255,255,255,0.25)', width: 28, height: 28, borderRadius: 14, justifyContent: 'center', alignItems: 'center' },
     countText: { color: '#FFF', fontSize: 13, fontWeight: '800' },

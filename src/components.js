@@ -11,7 +11,8 @@ import { useUser, useAppTheme, useCart } from './context';
 import { ALL_RESTAURANTS } from './data';
 
 const triggerHaptic = () => Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
-const { width: SW } = Dimensions.get('window');
+const { width: RAW_SW } = Dimensions.get('window');
+const SW = Platform.OS === 'web' ? Math.min(RAW_SW, 420) : RAW_SW;
 
 // ─── AppBackground ────────────────────────────────────────────────────────────
 // Colorful gradient backdrop — the frosted glass layers sit on top of this.

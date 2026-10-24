@@ -10,7 +10,8 @@ import {
 import { LinearGradient } from 'expo-linear-gradient';
 import { useAppTheme } from './context';
 
-const { width: SW, height: SH } = Dimensions.get('window');
+const { width: RAW_SW, height: SH } = Dimensions.get('window');
+const SW = Platform.OS === 'web' ? Math.min(RAW_SW, 420) : RAW_SW;
 
 export default function SplashScreen({ onFinish }) {
     const { theme } = useAppTheme();

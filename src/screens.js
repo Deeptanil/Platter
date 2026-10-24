@@ -14,7 +14,8 @@ import { useAppTheme, useSettings, useUser, useCart } from './context';
 import { BigRestaurantCard, RecommendedCard, CartFAB, GlassCard, GlassInput, AppBackground, GlassButton } from './components';
 import { ALL_RESTAURANTS, CATEGORIES, MOODS, getFoodImage } from './data';
 
-const { width: SCREEN_WIDTH } = Dimensions.get('window');
+const { width: RAW_WIDTH } = Dimensions.get('window');
+const SCREEN_WIDTH = Platform.OS === 'web' ? Math.min(RAW_WIDTH, 420) : RAW_WIDTH;
 
 const triggerHaptic = () => Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
 

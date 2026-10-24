@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { View } from 'react-native';
+import { View, Platform, StyleSheet, useWindowDimensions } from 'react-native';
 import * as Font from 'expo-font';
 import { UserProvider, ThemeProvider, SettingsProvider, CartProvider } from './src/context';
 import RootNavigator from './src/navigation';
@@ -8,6 +8,10 @@ import SplashScreen from './src/SplashScreen';
 export default function App() {
     const [fontsLoaded, setFontsLoaded] = useState(false);
     const [splashDone, setSplashDone] = useState(false);
+    const { width, height } = useWindowDimensions();
+
+    const isWeb = Platform.OS === 'web';
+    const isDesktop = isWeb && width > 500;
 
     useEffect(() => {
         Font.loadAsync({
@@ -17,7 +21,7 @@ export default function App() {
             .finally(() => setFontsLoaded(true));
     }, []);
 
-    return (
+    const appContent = (
         <UserProvider>
             <ThemeProvider>
                 <SettingsProvider>
@@ -36,4 +40,70 @@ export default function App() {
             </ThemeProvider>
         </UserProvider>
     );
+
+    if (isDesktop) {
+        return (
+            <View style={styles.desktopCanvas}>
+                <View
+                    style={[
+                        styles.phoneMockup,
+                        {
+                            width: Math.min(420, width - 32),
+                            height: Math.min(880, height - 40),
+                        },
+                    ]}
+                >
+                    {/* Simulated iPhone Dynamic Island */}
+                    <View pointerEvents="none" style={styles.dynamicIsland} />
+                    <View style={styles.phoneInner}>{appContent}</View>
+                </View>
+            </View>
+        );
+    }
+
+    return <View style={styles.mobileContainer}>{appContent}</View>;
 }
+
+const styles = StyleSheet.create({
+    desktopCanvas: {
+        flex: 1,
+        width: '100%',
+        height: '100%',
+        backgroundColor: '#07060D',
+        alignItems: 'center',
+        justifyContent: 'center',
+        padding: 16,
+    },
+    phoneMockup: {
+        borderRadius: 50,
+        borderWidth: 10,
+        borderColor: '#242036',
+        backgroundColor: '#0D0B1E',
+        overflow: 'hidden',
+        position: 'relative',
+        shadowColor: '#000',
+        shadowOffset: { width: 0, height: 25 },
+        shadowOpacity: 0.65,
+        shadowRadius: 40,
+        elevation: 25,
+    },
+    dynamicIsland: {
+        position: 'absolute',
+        top: 10,
+        alignSelf: 'center',
+        width: 105,
+        height: 24,
+        borderRadius: 12,
+        backgroundColor: '#000000',
+        zIndex: 9999,
+    },
+    phoneInner: {
+        flex: 1,
+        width: '100%',
+        height: '100%',
+        overflow: 'hidden',
+    },
+    mobileContainer: {
+        flex: 1,
+    },
+});

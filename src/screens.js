@@ -19,6 +19,15 @@ const SCREEN_WIDTH = Platform.OS === 'web' ? Math.min(RAW_WIDTH, 420) : RAW_WIDT
 
 const triggerHaptic = () => Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
 
+const WebSafeTouchableDismiss = ({ children }) => {
+    if (Platform.OS === 'web') return children;
+    return (
+        <TouchableWithoutFeedback onPress={Keyboard.dismiss} accessible={false}>
+            {children}
+        </TouchableWithoutFeedback>
+    );
+};
+
 export const AuthScreen = ({ navigation }) => {
     const { theme } = useAppTheme();
     const { setUser } = useUser();
@@ -103,7 +112,7 @@ export const AuthScreen = ({ navigation }) => {
                 )}
                 
                 <KeyboardAvoidingView behavior={Platform.OS === "ios" ? "padding" : undefined} style={{ flex: 1 }}>
-                    <TouchableWithoutFeedback onPress={Keyboard.dismiss} accessible={false}>
+                    <WebSafeTouchableDismiss>
                         <View style={styles.authContent}>
 
                             {stage === 'welcome' && (
@@ -162,7 +171,7 @@ export const AuthScreen = ({ navigation }) => {
                                 </ScrollView>
                             )}
                         </View>
-                    </TouchableWithoutFeedback>
+                    </WebSafeTouchableDismiss>
                 </KeyboardAvoidingView>
             </SafeAreaView>
         </AppBackground>

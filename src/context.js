@@ -277,7 +277,7 @@ export const CartProvider = ({children}) => {
     useEffect(() => {
         const loadCartAndOrders = async () => {
             try {
-                const storedCart = await AsyncStorage.getItem('eatopia_cart');
+                const storedCart = (await AsyncStorage.getItem('platter_cart')) || (await AsyncStorage.getItem('eatopia_cart'));
                 if (storedCart) setCart(JSON.parse(storedCart));
 
                 const pastOrdersJson = await AsyncStorage.getItem('pastOrders');
@@ -294,7 +294,7 @@ export const CartProvider = ({children}) => {
     }, [pastOrders]);
 
     useEffect(() => {
-        AsyncStorage.setItem('eatopia_cart', JSON.stringify(cart));
+        AsyncStorage.setItem('platter_cart', JSON.stringify(cart));
     }, [cart]);
     
     const addToCart = (itemToAdd) => {

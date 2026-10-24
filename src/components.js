@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useRef } from 'react';
 import { View, TouchableOpacity, Dimensions, StyleSheet, Text as RNText, TextInput as RNTextInput, Image, Pressable } from 'react-native';
 import { Text, FAB } from 'react-native-paper';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
@@ -72,6 +72,7 @@ export const GlassCard = ({ children, style, onPress }) => {
 export const GlassInput = ({ label, value, onChangeText, keyboardType, maxLength, error }) => {
     const [isFocused, setIsFocused] = useState(false);
     const { theme } = useAppTheme();
+    const inputRef = useRef(null);
 
     const borderColor = error
         ? '#FF5252'
@@ -80,38 +81,54 @@ export const GlassInput = ({ label, value, onChangeText, keyboardType, maxLength
             : theme.dark ? 'rgba(255,255,255,0.15)' : 'rgba(108,59,245,0.2)';
 
     return (
-        <BlurView
-            intensity={theme.dark ? 30 : 50}
-            tint={theme.dark ? 'dark' : 'light'}
-            style={[
-                cStyles.glassInputWrap,
-                {
-                    borderColor,
-                    backgroundColor: theme.dark ? 'rgba(255,255,255,0.06)' : 'rgba(255,255,255,0.7)',
-                },
-            ]}
+        <Pressable
+            onPress={() => inputRef.current?.focus()}
+            style={{ width: '100%' }}
         >
-            <RNText style={[
-                cStyles.glassInputLabel,
-                {
-                    color: isFocused ? theme.colors.primary : theme.dark ? 'rgba(255,255,255,0.5)' : 'rgba(108,59,245,0.55)',
-                    top: (isFocused || value) ? 6 : 16,
-                    fontSize: (isFocused || value) ? 11 : 15,
-                },
-            ]}>
-                {label}
-            </RNText>
-            <RNTextInput
-                value={value}
-                onChangeText={onChangeText}
-                keyboardType={keyboardType}
-                maxLength={maxLength}
-                style={[cStyles.glassInput, { color: theme.dark ? '#FFFFFF' : theme.colors.onSurface, paddingTop: (isFocused || value) ? 22 : 14 }]}
-                onFocus={() => setIsFocused(true)}
-                onBlur={() => setIsFocused(false)}
-                placeholderTextColor="transparent"
-            />
-        </BlurView>
+            <BlurView
+                intensity={theme.dark ? 30 : 50}
+                tint={theme.dark ? 'dark' : 'light'}
+                style={[
+                    cStyles.glassInputWrap,
+                    {
+                        borderColor,
+                        backgroundColor: theme.dark ? 'rgba(255,255,255,0.06)' : 'rgba(255,255,255,0.7)',
+                    },
+                ]}
+            >
+                <RNText
+                    pointerEvents="none"
+                    style={[
+                        cStyles.glassInputLabel,
+                        {
+                            color: isFocused ? theme.colors.primary : theme.dark ? 'rgba(255,255,255,0.5)' : 'rgba(108,59,245,0.55)',
+                            top: (isFocused || value) ? 6 : 18,
+                            fontSize: (isFocused || value) ? 11 : 15,
+                        },
+                    ]}
+                >
+                    {label}
+                </RNText>
+                <RNTextInput
+                    ref={inputRef}
+                    value={value}
+                    onChangeText={onChangeText}
+                    keyboardType={keyboardType}
+                    maxLength={maxLength}
+                    style={[
+                        cStyles.glassInput,
+                        {
+                            color: theme.dark ? '#FFFFFF' : theme.colors.onSurface,
+                            paddingTop: (isFocused || value) ? 18 : 0,
+                            outlineStyle: 'none',
+                        },
+                    ]}
+                    onFocus={() => setIsFocused(true)}
+                    onBlur={() => setIsFocused(false)}
+                    placeholderTextColor="transparent"
+                />
+            </BlurView>
+        </Pressable>
     );
 };
 
@@ -316,6 +333,7 @@ const cStyles = StyleSheet.create({
         overflow: 'hidden',
         marginBottom: 4,
         position: 'relative',
+        justifyContent: 'center',
     },
     glassInputLabel: {
         position: 'absolute',
@@ -324,12 +342,11 @@ const cStyles = StyleSheet.create({
         zIndex: 1,
     },
     glassInput: {
-        position: 'absolute',
-        bottom: 8,
-        left: 16,
-        right: 16,
+        width: '100%',
+        height: '100%',
+        paddingHorizontal: 16,
         fontSize: 16,
-        height: 32,
+        zIndex: 2,
     },
     glassButton: {
         flexDirection: 'row',

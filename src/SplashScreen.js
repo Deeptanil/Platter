@@ -142,7 +142,7 @@ export default function SplashScreen({ onFinish }) {
                         },
                     ]}
                 >
-                    eatopia
+                    platter
                 </Animated.Text>
 
                 {/* Tagline */}

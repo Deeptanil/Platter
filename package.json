@@ -1,4 +1,5 @@
 {
+  "name": "platter",
   "license": "0BSD",
   "main": "index.js",
   "scripts": {

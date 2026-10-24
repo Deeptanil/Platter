@@ -5,6 +5,29 @@ import { UserProvider, ThemeProvider, SettingsProvider, CartProvider } from './s
 import RootNavigator from './src/navigation';
 import SplashScreen from './src/SplashScreen';
 
+// Injected global web styles: hide scrollbars while preserving full scrollability
+if (Platform.OS === 'web' && typeof document !== 'undefined') {
+    const styleId = 'hide-scrollbar-style';
+    if (!document.getElementById(styleId)) {
+        const style = document.createElement('style');
+        style.id = styleId;
+        style.textContent = `
+            *::-webkit-scrollbar,
+            ::-webkit-scrollbar {
+                display: none !important;
+                width: 0px !important;
+                height: 0px !important;
+                background: transparent !important;
+            }
+            * {
+                -ms-overflow-style: none !important;
+                scrollbar-width: none !important;
+            }
+        `;
+        document.head.appendChild(style);
+    }
+}
+
 export default function App() {
     const [fontsLoaded, setFontsLoaded] = useState(false);
     const [splashDone, setSplashDone] = useState(false);

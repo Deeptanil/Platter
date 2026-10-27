@@ -1,4 +1,4 @@
-import React, { useMemo } from 'react';
+import React, { useMemo, useRef } from 'react';
 import { View, TouchableOpacity, StyleSheet, Text } from 'react-native';
 import { NavigationContainer, DefaultTheme, DarkTheme } from '@react-navigation/native';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
@@ -10,6 +10,7 @@ import { BlurView } from 'expo-blur';
 import { LinearGradient } from 'expo-linear-gradient';
 
 import { useAppTheme, useUser } from './context';
+import { trackPageView } from './analytics';
 
 // Named loading placeholder — fixes React Navigation inline-function warning
 const LoadingScreen = () => <View style={{ flex: 1 }} />;
@@ -134,6 +135,9 @@ const MainAppStack = () => {
 export default function RootNavigator() {
     const { theme } = useAppTheme();
     const { user } = useUser();
+    const navigationRef = useRef(null);
+    const routeNameRef = useRef(null);
+    const routeParamsRef = useRef(null);
 
     const navTheme = useMemo(() => {
         const base = theme.dark ? DarkTheme : DefaultTheme;
@@ -154,7 +158,35 @@ export default function RootNavigator() {
     return (
         <PaperProvider theme={theme}>
             <View style={{ flex: 1, backgroundColor: theme.colors.background }}>
-                <NavigationContainer theme={navTheme}>
+                <NavigationContainer
+                    ref={navigationRef}
+                    theme={navTheme}
+                    onReady={() => {
+                        const currentRoute = navigationRef.current?.getCurrentRoute();
+                        if (currentRoute) {
+                            routeNameRef.current = currentRoute.name;
+                            routeParamsRef.current = currentRoute.params;
+                            trackPageView(currentRoute);
+                        }
+                    }}
+                    onStateChange={() => {
+                        const currentRoute = navigationRef.current?.getCurrentRoute();
+                        if (!currentRoute) return;
+
+                        const previousRouteName = routeNameRef.current;
+                        const currentRouteName = currentRoute.name;
+                        const previousParams = routeParamsRef.current;
+                        const currentParams = currentRoute.params;
+
+                        const paramsChanged = JSON.stringify(previousParams) !== JSON.stringify(currentParams);
+
+                        if (previousRouteName !== currentRouteName || paramsChanged) {
+                            routeNameRef.current = currentRouteName;
+                            routeParamsRef.current = currentParams;
+                            trackPageView(currentRoute);
+                        }
+                    }}
+                >
                     <Stack.Navigator screenOptions={{ contentStyle: { backgroundColor: 'transparent' } }}>
                         {user === undefined ? (
                             <Stack.Screen name="Loading" component={LoadingScreen} options={{ headerShown: false }} />

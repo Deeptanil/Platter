@@ -2,6 +2,7 @@ import React, { useMemo, useState, createContext, useContext, useEffect, useRef 
 import { MD3LightTheme, MD3DarkTheme } from 'react-native-paper'; // Keep imports for provider, but we won't use the themes directly in the same way
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import * as Location from 'expo-location';
+import { identifyUser } from './analytics';
 
 // Platter brand theme — electric purple/blue palette
 const AppLightTheme = {
@@ -188,6 +189,15 @@ export const UserProvider = ({ children }) => {
     useEffect(() => {
         if (user !== undefined) {
             AsyncStorage.setItem('userData', JSON.stringify(user));
+            if (user && (user.id || user.email)) {
+                identifyUser(user.email || user.id, {
+                    name: user.name,
+                    email: user.email,
+                    phone: user.phone,
+                });
+            } else if (user === null) {
+                identifyUser(null);
+            }
         }
     }, [user]);
 

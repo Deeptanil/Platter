@@ -4,6 +4,7 @@ import * as Font from 'expo-font';
 import { UserProvider, ThemeProvider, SettingsProvider, CartProvider } from './src/context';
 import RootNavigator from './src/navigation';
 import SplashScreen from './src/SplashScreen';
+import { initAnalytics } from './src/analytics';
 
 // Injected global web styles: hide scrollbars while preserving full scrollability
 if (Platform.OS === 'web' && typeof document !== 'undefined') {
@@ -37,6 +38,7 @@ export default function App() {
     const isDesktop = isWeb && width > 500;
 
     useEffect(() => {
+        initAnalytics();
         Font.loadAsync({
             Casko: require('./assets/casko-luxury-demo.regular.otf'),
         })
